@@ -1,8 +1,11 @@
 #include <include/utils/leb128.h>
+#include <stdlib.h>
 
 #ifdef DEBUG
 	#include <stdio.h>
 #endif
+
+// TODO avoid the usage of stdlib, no malloc, no free, etc
 
 unsigned int decode_var_int32(char *buffer, int offset, int size){
 
@@ -50,9 +53,8 @@ unsigned int decode_var_uint32(char* buffer, int offset){
 
 
 // Return the size of the LEB128 buffer
-void encode_var_uint_leb128(unsigned int value, unsigned int padding, int* output, int* size){
+void encode_var_uint_leb128(unsigned int value, unsigned int padding, char* output, int* size){
 
-	char * result = malloc(MAX_LEB_SIZE);
 	unsigned int b = 0;
 	int index = 0;
 
@@ -63,13 +65,12 @@ void encode_var_uint_leb128(unsigned int value, unsigned int padding, int* outpu
 		{
 			b =  b | 128;
 		}
-		result[MAX_LEB_SIZE - index--] = b;
+		output[MAX_LEB_SIZE - index--] = b;
 		padding--;
 
 	}while(value != 0 || padding > -1);
 
 
-	(*output) = result;
 	(*size) = index;
 }
 
