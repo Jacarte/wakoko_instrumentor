@@ -1,0 +1,6 @@
+{
+	"files.associations": {
+		"cstddef": "c",
+		"functional": "c"
+	}
+}

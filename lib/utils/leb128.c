@@ -1,6 +1,10 @@
 #include <include/utils/leb128.h>
 
-unsigned int decode_var_uint32(char *buffer, int offset, int size){
+#ifdef DEBUG
+	#include <stdio.h>
+#endif
+
+unsigned int decode_var_int32(char *buffer, int offset, int size){
 
 	unsigned result = 0;
 	unsigned shift = 0;
@@ -8,20 +12,24 @@ unsigned int decode_var_uint32(char *buffer, int offset, int size){
 	
 	do{
 		byte = buffer[offset++];
-		result |= 0x7f << shift;
+		result |= (byte & 0x7f) << shift;
 		shift += 7;
 
 	}while((byte & 0x80) != 0);
 
 
+	//#ifdef DEBUG
+	//	printf("%d %d\n",shift, result);
+	//#endif
     /* sign bit of byte is second high order bit (0x40) */
-    if ((shift < size) && (byte & 0x40))
-        result |= (~0 << shift);
+    if ((shift < size) && (byte & 0x40)){
+	    result |= (~0 << shift);
+	}
 
 	return result;
 }
 
-unsigned int decode_var_int32(char* buffer, int offset){
+unsigned int decode_var_uint32(char* buffer, int offset){
 
 	unsigned result = 0;
 	unsigned shift = 0;
@@ -29,15 +37,14 @@ unsigned int decode_var_int32(char* buffer, int offset){
 	while(1){
 		char byte = buffer[offset++];
 
-		result |= 0x7f << shift;
+		result |= (byte & 0x7f) << shift;
 
 		if((byte & 0x80) == 0)
 			break;
 
+
 		shift += 7;
 	}
-
-
 	return result;
 }
 

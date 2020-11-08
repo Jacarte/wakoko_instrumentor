@@ -10,5 +10,5 @@ all: program
 	mv *.out $(BIN)
 
 program: leb128test.c
-	gcc -c $(INC) leb128test.c
+	gcc -c $(FLAGS) $(INC) leb128test.c
 
