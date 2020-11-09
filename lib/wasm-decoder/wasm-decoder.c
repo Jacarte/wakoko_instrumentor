@@ -7,7 +7,7 @@
 void parse_wasm(char* bytes, int size){
 	// set offset to 0
 	BYTE_OFFSET = 0;
-	uint32 header = READ_AND_CONSUME_Uint32(bytes, BYTE_OFFSET)
+	uint32 header = readUint32LE(bytes, &BYTE_OFFSET);
 	
 	if(header != 0x6d736100){
 		#ifdef DEBUG
@@ -16,7 +16,7 @@ void parse_wasm(char* bytes, int size){
 		exit(1); // not a valid WASM module
 	}
 	
-	uint16 version = READ_AND_CONSUME_Uint16(bytes, BYTE_OFFSET)
+	uint16 version = readUint16LE(bytes, &BYTE_OFFSET);
 		
 	#ifdef DEBUG
 	printf("WASM version %d\n", version);
@@ -44,6 +44,53 @@ void parse_section(ModuleSection * section, char* bytes){
 	#endif
 
 	char* payload = (char*)malloc(section->size);
+
+	section->payload = payload;
+
+	switch (section->type)
+	{
+		case 1: // Types section
+			/* code */
+			break;
+		
+		case 2: // Import section
+			/* code */
+			break;
+
+		case 3: // Function section
+			/* code */
+			break;
+
+		case 4: // Table section
+			/* code */
+			break;
+		case 5: // Memory section
+			/* code */
+			break;
+		case 6: // Global section
+			/* code */
+			break;
+		case 7: // Export section
+			/* code */
+			break;
+		case 8: // Start section
+			/* code */
+			break;
+		case 9: // Element section
+			/* code */
+			break;
+		case 10: // Code section
+			/* code */
+			break;
+		case 11: // Data section
+			/* code */
+			break;
+		case 0: // Custom
+			/* code */
+			break;
+	default:
+		break;
+	}
 
 	READ_AND_CONSUME_BUFFER_PIECE(bytes, BYTE_OFFSET, section->size, payload)
 

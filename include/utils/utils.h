@@ -10,5 +10,5 @@
 typedef unsigned long  uint32;
 typedef unsigned int  uint16;
 
-uint32 readUint32LE(char* buffer, int offset);
-uint16 readUint16LE(char* buffer, int offset);
+uint32 readUint32LE(char* buffer, int * offset);
+uint16 readUint16LE(char* buffer, int * offset);
