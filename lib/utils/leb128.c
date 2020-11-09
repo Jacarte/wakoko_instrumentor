@@ -7,14 +7,14 @@
 
 // TODO avoid the usage of stdlib, no malloc, no free, etc
 
-unsigned int decode_var_int32(char *buffer, int offset, int size){
+unsigned int decode_var_int32(char *buffer, int * offset, int size){
 
 	unsigned result = 0;
 	unsigned shift = 0;
 	char byte;
 	
 	do{
-		byte = buffer[offset++];
+		byte = buffer[(*offset)++];
 		result |= (byte & 0x7f) << shift;
 		shift += 7;
 
@@ -32,13 +32,13 @@ unsigned int decode_var_int32(char *buffer, int offset, int size){
 	return result;
 }
 
-unsigned int decode_var_uint32(char* buffer, int offset){
+unsigned int decode_var_uint32(char* buffer, int* offset){
 
 	unsigned result = 0;
 	unsigned shift = 0;
 
 	while(1){
-		char byte = buffer[offset++];
+		char byte = buffer[(*offset)++];
 
 		result |= (byte & 0x7f) << shift;
 
