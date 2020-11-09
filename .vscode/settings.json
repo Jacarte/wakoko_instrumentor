@@ -1,6 +1,7 @@
 {
 	"files.associations": {
 		"cstddef": "c",
-		"functional": "c"
+		"functional": "c",
+		"algorithm": "c"
 	}
 }

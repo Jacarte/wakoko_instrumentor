@@ -21,3 +21,10 @@ uint16 readUint16LE(char* buffer, int* offset){
 	*offset = *offset + 4;
 	return result;	
 }
+
+
+char readInt8(char* buffer, int* offset){
+	char result = (0xff & buffer[*offset]);
+	*offset = *offset + 1;
+	return result;	
+}
