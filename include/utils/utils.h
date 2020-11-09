@@ -7,9 +7,15 @@
 #define ANSI_COLOR_CYAN    "\x1b[36m"
 #define ANSI_COLOR_RESET   "\x1b[0m"
 
+#define MAX_ALLOCATIONS 10000
+
 typedef unsigned long  uint32;
 typedef unsigned int  uint16;
 
 uint32 readUint32LE(char* buffer, int * offset);
 uint16 readUint16LE(char* buffer, int * offset);
 char readInt8(char* buffer, int* offset);
+
+void* allocate_and_register(size_t sz);
+
+void free_all();

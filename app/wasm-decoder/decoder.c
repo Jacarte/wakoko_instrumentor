@@ -20,6 +20,9 @@ int main(int argc, char * argv[]){
 		fclose(in_file);
 
 		parse_wasm(bytes, sz);	
+
+		free_all();
+		
 		//free(bytes);
 
 		/*FILE *in_file  = fopen("name_of_file", "r"); // read only 

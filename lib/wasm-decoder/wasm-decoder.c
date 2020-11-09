@@ -4,7 +4,7 @@
 	#include <stdio.h>	
 #endif
 
-void add_section(WASMModule* module, ModuleSection* section){
+void add_section(WASMModule* module, Section* section){
 	#ifdef DEBUG
 	printf("Adding section %d\n", section->size);
 	#endif
@@ -13,18 +13,19 @@ void add_section(WASMModule* module, ModuleSection* section){
 	#ifdef DEBUG
 	//printf("New sections size %d\n", module->count);
 	#endif
-	ModuleSection* sections = (ModuleSection*)malloc(sizeof(ModuleSection)*module->count);
+	Section* sections = (Section*)allocate_and_register(sizeof(Section)*module->count);
 	
 	if(module->count > 1)
-		memcpy(sections, module->sections[0], sizeof(ModuleSection)*(module->count - 2));
+		memcpy(sections, module->sections[0], sizeof(Section)*(module->count - 2));
 
 	module->sections[module->count - 1] = section;
 
-	if(module->count > 1)
-		free(module->sections[0]);
+	//if(module->count > 1)
+	//	free(module->sections[0]);
 	module->sections[0] = sections;
 }
 
+// Linearly parse WASM binary to construct tree structure
 void parse_wasm(char* bytes, int size){
 	// set offset to 0
 	int module_position = 0;
@@ -58,23 +59,8 @@ void parse_wasm(char* bytes, int size){
 
 	while(module.position <= size){
 		// Create a module section
-		ModuleSection* section = (ModuleSection*) malloc(sizeof(ModuleSection));
-
-		uint32 section_type = decode_var_uint32(bytes, &module.position);
 		
-		uint32 section_size = decode_var_uint32(bytes, &module.position);
-		
-		if(section_size == 0)
-			break;
-
-		section -> size = section_size;
-		section -> type = section_type;
-		section -> section_offset = module.position;
-		
-		parse_section(section, &module);
-
-
-
+		Section* section = parse_section(&module);
 		#ifdef DEBUG
 		//printf("After parsing section position %d\n", module.position);
 		#endif
@@ -82,8 +68,8 @@ void parse_wasm(char* bytes, int size){
 	}
 }
 
-void parse_types_section(ModuleSection * section, WASMModule * module){
-	TypeSection * typeS = (TypeSection*)malloc(sizeof(TypeSection));
+void parse_types_section(Section * section, WASMModule * module){
+	TypeSection * typeS = (TypeSection*)allocate_and_register(sizeof(TypeSection));
 	
 	#ifdef DEBUG
 	printf("position in section %d\n", module->position);
@@ -91,20 +77,19 @@ void parse_types_section(ModuleSection * section, WASMModule * module){
 	int count = decode_var_uint32(module->payload, &module->position);
 	
 	typeS->count = count;
-	typeS->sections[0] = (FuncTypeSection*)malloc(count*sizeof(FuncTypeSection));
+	typeS->sections[0] = (FuncTypeSection*)allocate_and_register(count*sizeof(FuncTypeSection));
 
 
 	for(int i =0; i < count; i++){
-		typeS->sections[i] = (FuncTypeSection*)malloc(sizeof(FuncTypeSection));
+		typeS->sections[i] = (FuncTypeSection*)allocate_and_register(sizeof(FuncTypeSection));
 		
-		// parse types
 		int form = decode_var_int32(module->payload, &module->position, 7);
 		typeS->sections[i]->form = form;
 		
 		int param_count = decode_var_uint32(module->payload, &module->position);
 		typeS->sections[i]->param_count = param_count;
 
-		typeS->sections[i]->param_types = (char*)malloc(sizeof(param_count));
+		typeS->sections[i]->param_types = (char*)allocate_and_register(sizeof(param_count));
 		for(int j = 0; j < param_count; j++){
 			char tpe = readInt8(module->payload, &module->position);
 			typeS->sections[i]->param_types[j] = tpe;
@@ -112,26 +97,34 @@ void parse_types_section(ModuleSection * section, WASMModule * module){
 
 		int return_count = readInt8(module->payload, &module->position);
 
-		typeS->sections[i]->return_types = (char*)malloc(sizeof(return_count));
+		typeS->sections[i]->return_types = (char*)allocate_and_register(sizeof(return_count));
 		for(int j=0; j < return_count; j++){
-			// TODO read int8
 			char tpe = readInt8(module->payload, &module->position);
 			typeS->sections[i]->return_types[j] = tpe;
 		}
 	}
 
+	section->instance = typeS;
 
 	#ifdef DEBUG
 	printf("Types section count %d\n", count);
 	#endif
 }
 
-void parse_section(ModuleSection * section, WASMModule* module){
+Section* parse_section(WASMModule* module){
 
+	Section* section =  (Section*) allocate_and_register(sizeof(Section));
+
+	uint32 section_type = decode_var_uint32(module->payload, &module->position);
+	
+	uint32 section_size = decode_var_uint32(module->payload, &module->position);
+	
+	section -> size = section_size;
+	section -> type = section_type;
+	section -> section_offset = module -> position;
 	#ifdef DEBUG
-	printf("SECTION type %d size %d\n", section->type, section->size);
+	printf("Section type %d\n", section->type);
 	#endif
-
 	switch (section->type)
 	{
 		case 1: // Types section
@@ -168,5 +161,7 @@ void parse_section(ModuleSection * section, WASMModule* module){
 		module->position += section->size;
 		break;
 	}
+
+	return section;
 	//BYTE_OFFSET += section->size;
 }

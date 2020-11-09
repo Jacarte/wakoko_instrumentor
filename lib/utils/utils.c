@@ -28,3 +28,23 @@ char readInt8(char* buffer, int* offset){
 	*offset = *offset + 1;
 	return result;	
 }
+
+
+static void* allocations [MAX_ALLOCATIONS];
+static int allocation_index = 0;
+
+void* allocate_and_register(size_t sz){
+	if(allocation_index == MAX_ALLOCATIONS)
+	{
+		printf("Maximum number of allocations are reached!.");
+		exit(1);
+	}
+	allocations[allocation_index++] = (void*)malloc(sz);
+	return allocations[allocation_index - 1];
+}
+
+
+void free_all(){
+	for(int i =0; i < allocation_index; i++)
+		free(allocations[i]);
+}
