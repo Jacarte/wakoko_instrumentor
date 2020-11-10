@@ -111,6 +111,94 @@ void parse_types_section(Section * section, WASMModule * module){
 	#endif
 }
 
+void parse_import_section(Section * section, WASMModule * module){
+
+	ImportSection * importSection = (ImportSection*)allocate_and_register(sizeof(ImportSection));
+
+	int count = decode_var_uint32(module->payload, &module->position);
+	importSection->count = count;
+	
+	ImportType * imports = (ImportType*)allocate_and_register(sizeof(ImportType)*count);
+
+	for(int i = 0; i < count; i++){
+
+		int module_name_len = decode_var_uint32(module->payload, &module->position);
+		char* module_name = (char*)allocate_and_register(module_name_len + 1);
+		memcpy(module_name, module->payload + module->position, module_name_len + 1);
+		module->position += module_name_len;
+
+
+		int field_name_len = decode_var_uint32(module->payload, &module->position);
+		char* field_name = (char*)allocate_and_register(module_name_len + 1);
+		memcpy(field_name, module->payload + module->position, field_name_len + 1);
+		module->position += field_name_len;
+
+		int kind = readInt8(module->payload, &module->position);
+
+		imports[i].kind = kind;
+		imports[i].module_name_len = module_name_len;
+		imports[i].module_name = module_name;
+		imports[i].field_name_len = field_name_len;
+		imports[i].field_name = field_name;
+		
+
+		switch (kind)
+		{
+			case 0: // Function
+			{
+				FunctionImport * f_import = (FunctionImport*) allocate_and_register(sizeof(FunctionImport));
+				f_import->index = decode_var_uint32(module->payload, &module->position);
+				imports[i].import_kind = f_import;
+			}
+				break;
+			case 1: // Table
+				{
+					TableImport * t_import = (TableImport*) allocate_and_register(sizeof(TableImport));
+					t_import->limit = readInt8(module->payload, &module->position);
+					t_import->limit = decode_var_uint32(module->payload, &module->position);
+					t_import->limit_initial = decode_var_uint32(module->payload, &module->position);
+
+					if(t_import->limit)
+						t_import->limit_maximum = decode_var_uint32(module->payload, &module->position);
+
+					imports[i].import_kind = t_import;
+				}
+				break;
+			case 2: // Memory
+				{
+					MemoryImport * m_import = (MemoryImport*) allocate_and_register(sizeof(MemoryImport));
+					m_import->limit = decode_var_uint32(module->payload, &module->position);
+					m_import->limit_initial = decode_var_uint32(module->payload, &module->position);
+
+					if(m_import->limit)
+						m_import->limit_maximum = decode_var_uint32(module->payload, &module->position);
+
+					imports[i].import_kind = m_import;
+				}
+				break;
+			case 3: // Global
+				{
+					GlobalImport * g_import = (GlobalImport*) allocate_and_register(sizeof(GlobalImport));
+					g_import->content_type = readInt8(module->payload, &module->position);
+					g_import->is_mutable =readInt8(module->payload, &module->position);
+					imports[i].import_kind = g_import;
+
+				}
+				break;
+			
+			default:
+				break;
+		}
+
+	}
+
+	importSection->imports[0] = imports;
+
+	#ifdef DEBUG
+	printf("Import section count %d\n", count);
+	#endif
+}
+
 Section* parse_section(WASMModule* module){
 
 	Section* section =  (Section*) allocate_and_register(sizeof(Section));
@@ -131,10 +219,11 @@ Section* parse_section(WASMModule* module){
 			/* code */
 			parse_types_section(section, module);
 			break;
-		/*
+		
 		case 2: // Import section
+			parse_import_section(section, module);
 			break;
-
+/*
 		case 3: // Function section
 			break;
 

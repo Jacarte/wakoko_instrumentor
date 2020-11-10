@@ -2,6 +2,7 @@
 	"files.associations": {
 		"cstddef": "c",
 		"functional": "c",
-		"algorithm": "c"
+		"algorithm": "c",
+		"typeinfo": "c"
 	}
 }

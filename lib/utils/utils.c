@@ -39,7 +39,7 @@ void* allocate_and_register(size_t sz){
 		printf("Maximum number of allocations are reached!.");
 		exit(1);
 	}
-	allocations[allocation_index++] = (void*)malloc(sz);
+	allocations[allocation_index++] = (void*)calloc(1, sz);
 	return allocations[allocation_index - 1];
 }
 
