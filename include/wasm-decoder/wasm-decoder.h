@@ -58,6 +58,16 @@ typedef struct {
 	ImportType* imports[0];
 } ImportSection;
 
+typedef struct {
+	unsigned int count;
+	int* types;
+} FunctionSection;
+
+typedef struct {
+	unsigned int count;
+
+	TableImport * tables[0];	
+} TableSection;
 
 typedef struct {
 

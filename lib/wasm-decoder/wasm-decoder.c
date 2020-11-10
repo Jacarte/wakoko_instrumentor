@@ -111,6 +111,51 @@ void parse_types_section(Section * section, WASMModule * module){
 	#endif
 }
 
+void parse_function_section(Section * section, WASMModule * module){
+	FunctionSection * function_section = (FunctionSection*)allocate_and_register(sizeof(FunctionSection));
+	
+	int count = decode_var_uint32(module->payload, &module->position);
+	function_section->count = count;
+
+	function_section->types = (int*)allocate_and_register(sizeof(int)*count);
+
+	for(int i =0; i < count; i++)
+		function_section->types[i] = decode_var_uint32(module->payload, &module->position);
+
+	section->instance = function_section;
+	#ifdef DEBUG
+	printf("Function section count %d\n", count);
+	#endif
+
+}
+
+void parse_table_section(Section * section, WASMModule * module){
+	TableSection * table_section = (TableSection *) allocate_and_register(sizeof(TableSection));
+	
+	int count = decode_var_uint32(module->payload, &module->position);
+	table_section->count = count;
+
+	table_section->tables[0] = (TableImport * ) allocate_and_register(sizeof(TableImport)*count);
+
+	for(int i =0; i < count; i++){
+		TableImport * t_import = (TableImport*) allocate_and_register(sizeof(TableImport));
+		t_import->limit = readInt8(module->payload, &module->position);
+		t_import->limit = decode_var_uint32(module->payload, &module->position);
+		t_import->limit_initial = decode_var_uint32(module->payload, &module->position);
+
+		if(t_import->limit)
+			t_import->limit_maximum = decode_var_uint32(module->payload, &module->position);
+
+		table_section->tables[i] = t_import;
+	}
+
+	section->instance = table_section;
+	#ifdef DEBUG
+	printf("Table section count %d\n", count);
+	#endif
+
+}
+
 void parse_import_section(Section * section, WASMModule * module){
 
 	ImportSection * importSection = (ImportSection*)allocate_and_register(sizeof(ImportSection));
@@ -223,12 +268,14 @@ Section* parse_section(WASMModule* module){
 		case 2: // Import section
 			parse_import_section(section, module);
 			break;
-/*
 		case 3: // Function section
+			parse_function_section(section, module);
 			break;
-
 		case 4: // Table section
+			parse_table_section(section, module);
 			break;
+/*
+
 		case 5: // Memory section
 			break;
 		case 6: // Global section
