@@ -50,10 +50,11 @@ void free_all(){
 }
 
 
-void init_array(Array *a, int initialSize) {
-  a->array = allocate_and_register(initialSize * sizeof(void*));
+void init_array(Array *a, int initialSize, int membersize) {
+  a->data = (void *) allocate_and_register(initialSize*membersize);
   a->count = 0;
   a->size = initialSize;
+  a->membersize = membersize;
 }
 
 void insert_array(Array *a, void * element) {
@@ -61,13 +62,21 @@ void insert_array(Array *a, void * element) {
   // Therefore a->used can go up to a->size 
   if (a->count == a->size) {
     a->size *= 2;
-    a->array = (void *)realloc(a->array, a->size * sizeof(void*));
+    a->data = realloc(a->data, a->size);
   }
 
-  a->array[a->count++] = *element;
+  void* target = (char*)a->data + (a->count*a->membersize);
+  a->count++;
+  memcpy(target, element, a->membersize);
+}
+
+
+void get_element(Array *a, unsigned int position, void * element) {
+  void* target = (char*)a->data + (position*a->membersize);
+  memcpy(element, target, a->membersize);
 }
 
 void free_array(Array *a) {
-  a->array = NULL;
+  a->data = NULL;
   a->count = a->size = 0;
 }

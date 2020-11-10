@@ -1,7 +1,7 @@
 
 
 
-all: utils wasm
+all: utils
 
 utils: leb128.c utils.c
 	$(CC) $(CCFLAGS) $(INC) $(L) leb128.c -c

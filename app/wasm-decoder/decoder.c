@@ -18,10 +18,19 @@ int main(int argc, char * argv[]){
 		fread(bytes, sz, 1, in_file);
 		fclose(in_file);
 
-		printf("WASM Size %d\n", sz);
-		parse_wasm(bytes, sz);	
+		WASMModule* module = parse_wasm(bytes, sz);	
+		Section s;
 
-		//free_all();
+		printf("WASM Size %d sections %d %d\n", sz, module->sections.count, module->sections.membersize);
+		for(int i = 0; i < module->count; i++){
+			
+
+			get_element(&module->sections, i, &s);
+
+			printf("type %d\n", s.type);
+		}
+
+		free_all();
 
 		//free(bytes);
 

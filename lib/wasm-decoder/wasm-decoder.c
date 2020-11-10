@@ -5,12 +5,15 @@
 #endif
 
 void add_section(WASMModule* module, Section* section){
-	#ifdef DEBUG
-	printf("Adding section %d\n", section->size);
-	#endif
+	
+	insert_array(&module->sections, section);
 	module->count += 1;
 
-	insertArray(&module->sections, section);
+	Section first;
+
+	get_element(&module->sections, module->count - 1, &first);
+
+	printf("%d\n", first.type);
 }
 
 
@@ -20,22 +23,22 @@ void parse_expression(WASMModule * module){
 	while((readInt8(module->payload, &module->position)) != OPCODE_END);
 }
 // Linearly parse WASM binary to construct tree structure
-void parse_wasm(char* bytes, unsigned int sz){
+WASMModule* parse_wasm(char* bytes, unsigned int sz){
 	// set offset to 0
 	int module_position = 0;
 
-	WASMModule module;
-	module.position = module_position;
-	module.payload = bytes;
-	module.count = 0;
-	module.size = sz;
+	WASMModule * module = (WASMModule*)allocate_and_register(sizeof(WASMModule));
+	module->position = module_position;
+	module->payload = bytes;
+	module->count = 0;
+	module->size = sz;
 
-	initArray(&module.sections, sizeof(Section*));
+	init_array(&module->sections, 20, sizeof(Section));
 	
-	uint32 header = readUint32LE(bytes, &module.position);
+	uint32 header = readUint32LE(bytes, &module->position);
 	
 	#ifdef DEBUG
-	printf("position %d %d\n", sz, module.position);
+	printf("position %d %d\n", sz, module->position);
 	#endif
 	if(header != 0x6d736100){
 		#ifdef DEBUG
@@ -43,26 +46,28 @@ void parse_wasm(char* bytes, unsigned int sz){
 		#endif
 	}
 	
-	uint16 version = readUint16LE(bytes, &module.position);
+	uint16 version = readUint16LE(bytes, &module->position);
 	//module.position += 4;
 		
 	#ifdef DEBUG
-	printf("position %d\n", module.position);
+	printf("position %d\n", module->position);
 	#endif 
 	#ifdef DEBUG
 	printf("WASM version %d\n", version);
 	#endif
 
-	while(module.size - module.position > 0){
+	while(module->size - module->position > 0){
 		// Create a module section
 		
-		Section* section = parse_section(&module);
-		add_section(&module, section);
+		Section* section = parse_section(module);
+		add_section(module, section);
 		#ifdef DEBUG
-		printf("%d size %d position \n", module.size, module.position);
+		printf("%d size %d position \n", module->size, module->position);
 		//printf("After parsing section position %d\n", module.position);
 		#endif
 	}
+
+	return module;
 }
 
 FunctionImport* parse_function_import(WASMModule * module){

@@ -21,13 +21,25 @@ void* allocate_and_register(size_t sz);
 void free_all();
 
 typedef struct {
-  void * array;
+
+	unsigned int section_offset;
+	unsigned int type;
+	unsigned int size;
+
+	void* instance; // ImportSectionPtr, TypeSectionPtr
+} Section;
+
+typedef struct {
+  void * data;
   int count;
+  int membersize;
   int size;
 } Array;
 
-void init_array(Array *a, int initialSize);
+void init_array(Array *a, int initialSize, int membersize);
 
 void insert_array(Array *a, void * element);
+
+void get_element(Array *a, unsigned int position, void * element);
 
 void free_array(Array *a);

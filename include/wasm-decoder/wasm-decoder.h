@@ -154,14 +154,6 @@ typedef struct {
 } CustomSection;
 
 
-typedef struct {
-
-	unsigned int section_offset;
-	unsigned int type;
-	unsigned int size;
-
-	void* instance; // ImportSectionPtr, TypeSectionPtr
-} Section;
 
 typedef struct WASMModules{
 
@@ -177,4 +169,4 @@ typedef struct WASMModules{
 
 Section* parse_section(WASMModule* module);
 
-void parse_wasm(char* bytes, unsigned int size);
+WASMModule* parse_wasm(char* bytes, unsigned int size);
