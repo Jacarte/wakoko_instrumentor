@@ -44,7 +44,6 @@ void parse_wasm(char* bytes, int size){
 		#ifdef DEBUG
 		printf("Invalid wasm header %04x\n", header);
 		#endif
-		exit(1); // not a valid WASM module
 	}
 	
 	uint16 version = readUint16LE(bytes, &module.position);
@@ -154,6 +153,26 @@ Global* parse_global(WASMModule * module){
 	#endif
 
 	return g_import;
+}
+
+
+ExportEntry* parse_export_entry(WASMModule * module){
+
+	ExportEntry * export_entry = (ExportEntry*) allocate_and_register(sizeof(ExportEntry));
+	export_entry->field_len = decode_var_uint32(module->payload, &module->position);
+	char* field_name = (char*)allocate_and_register(export_entry->field_len + 1);
+	memcpy(field_name, module->payload + module->position, export_entry->field_len + 1);
+	module->position += export_entry->field_len;
+
+	export_entry->field_str = field_name;
+	export_entry->kind = readInt8(module->payload, &module->position);
+	export_entry->index = decode_var_uint32(module->payload, &module->position);
+
+	#ifdef DEBUG
+	printf("Export entry %s\n", export_entry->field_str);
+	#endif
+
+	return export_entry;
 }
 
 void parse_types_section(Section * section, WASMModule * module){
@@ -277,6 +296,25 @@ void parse_global_section(Section * section, WASMModule * module){
 }
 
 
+void parse_export_section(Section * section, WASMModule * module){
+	ExportSection * export_section = (ExportSection *) allocate_and_register(sizeof(ExportSection));
+	
+	int count = decode_var_uint32(module->payload, &module->position);
+	export_section->count = count;
+
+	export_section->exports[0] = (ExportEntry * ) allocate_and_register(sizeof(ExportEntry)*count);
+
+	for(int i =0; i < count; i++){
+		export_section->exports[i] = (ExportEntry *) parse_export_entry(module);
+	}
+
+	section->instance = export_section;
+	#ifdef DEBUG
+	printf("export section count %d\n", count);
+	#endif
+
+}
+
 
 void parse_import_section(Section * section, WASMModule * module){
 
@@ -384,14 +422,15 @@ Section* parse_section(WASMModule* module){
 			parse_global_section(section, module);
 			break;
 		case 7: // Export section
+			parse_export_section(section, module);
+			break;
+		case 10: // Code section
 			break;
 /*
 
 		case 8: // Start section
 			break;
 		case 9: // Element section
-			break;
-		case 10: // Code section
 			break;
 		case 11: // Data section
 			break;

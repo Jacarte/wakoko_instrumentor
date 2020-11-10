@@ -2,6 +2,7 @@
 #include <include/utils/utils.h>
 #include <include/utils/leb128.h>
 #include <include/wasm-decoder/opcodes.h>
+#include <string.h> 
 
 typedef struct {
 	int form;
@@ -86,6 +87,19 @@ typedef struct {
 	unsigned int count;
 	GlobalImport * globals[0];	
 } GlobalSection;
+
+typedef struct{
+	unsigned int field_len;
+	char* field_str;
+	char kind;
+	unsigned int index;
+} ExportEntry;
+
+typedef struct {
+	unsigned int count;
+	ExportEntry * exports[0];	
+} ExportSection;
+
 
 typedef struct {
 
