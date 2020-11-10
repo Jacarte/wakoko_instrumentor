@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <include/utils/utils.h>
 #include <include/utils/leb128.h>
-
+#include <include/wasm-decoder/opcodes.h>
 
 typedef struct {
 	int form;
@@ -18,6 +18,7 @@ typedef struct {
 } FunctionImport;
 
 typedef struct {
+	int elem_type;
 	int limit;
 	unsigned int limit_initial;
 	int limit_maximum;
@@ -35,6 +36,13 @@ typedef struct {
 	char content_type;
 	char is_mutable;
 } GlobalImport;
+
+typedef struct {
+	char content_type;
+	char is_mutable;
+	char* init;
+} Global;
+
 
 typedef struct {
 	int module_name_len;
@@ -65,9 +73,19 @@ typedef struct {
 
 typedef struct {
 	unsigned int count;
-
 	TableImport * tables[0];	
 } TableSection;
+
+
+typedef struct {
+	unsigned int count;
+	MemoryImport * memories[0];	
+} MemorySection;
+
+typedef struct {
+	unsigned int count;
+	GlobalImport * globals[0];	
+} GlobalSection;
 
 typedef struct {
 

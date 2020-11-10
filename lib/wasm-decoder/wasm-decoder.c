@@ -68,6 +68,94 @@ void parse_wasm(char* bytes, int size){
 	}
 }
 
+FunctionImport* parse_function_import(WASMModule * module){
+
+	#ifdef DEBUG
+	printf("parsing function import\n");
+	#endif
+
+	FunctionImport * f_import = (FunctionImport*) allocate_and_register(sizeof(FunctionImport));
+	f_import->index = decode_var_uint32(module->payload, &module->position);
+
+	return f_import;
+}
+
+
+TableImport* parse_table_import(WASMModule * module){
+
+	#ifdef DEBUG
+	printf("parsing table import\n");
+	#endif
+	TableImport * t_import = (TableImport*) allocate_and_register(sizeof(TableImport));
+	t_import->elem_type = readInt8(module->payload, &module->position);
+	t_import->limit = decode_var_uint32(module->payload, &module->position);
+	t_import->limit_initial = decode_var_uint32(module->payload, &module->position);
+
+	if(t_import->limit)
+		t_import->limit_maximum = decode_var_uint32(module->payload, &module->position);
+
+	#ifdef DEBUG
+	printf("Import %02x %d %d %d\n", t_import->elem_type, t_import->limit, t_import->limit_initial,  t_import->limit_maximum);
+	#endif
+	return t_import;
+}
+
+MemoryImport* parse_memory_import(WASMModule * module){
+
+	#ifdef DEBUG
+	printf("parsing memory import\n");
+	#endif
+	MemoryImport * m_import = (MemoryImport*) allocate_and_register(sizeof(MemoryImport));
+	m_import->limit = decode_var_uint32(module->payload, &module->position);
+	m_import->limit_initial = decode_var_uint32(module->payload, &module->position);
+
+	if(m_import->limit)
+		m_import->limit_maximum = decode_var_uint32(module->payload, &module->position);
+
+	#ifdef DEBUG
+	printf("Memory %d %d %d\n", m_import->limit, m_import->limit_initial,  m_import->limit_maximum);
+	#endif
+	return m_import;
+}
+
+
+
+
+GlobalImport* parse_global_import(WASMModule * module){
+
+	#ifdef DEBUG
+	printf("parsing global import\n");
+	#endif
+	GlobalImport * g_import = (GlobalImport*) allocate_and_register(sizeof(GlobalImport));
+	g_import->content_type = readInt8(module->payload, &module->position);
+	g_import->is_mutable = readInt8(module->payload, &module->position);
+	
+
+	#ifdef DEBUG
+	printf("Global %02x %d\n", g_import->content_type & 0xff, g_import->is_mutable);
+	#endif
+
+	return g_import;
+}
+
+Global* parse_global(WASMModule * module){
+
+	#ifdef DEBUG
+	printf("parsing global import\n");
+	#endif
+	Global * g_import = (Global*) allocate_and_register(sizeof(Global));
+	g_import->content_type = readInt8(module->payload, &module->position);
+	g_import->is_mutable = readInt8(module->payload, &module->position);
+	
+	while((readInt8(module->payload, &module->position)) != OPCODE_END);
+
+	#ifdef DEBUG
+	printf("Global %02x %d\n", g_import->content_type & 0xff, g_import->is_mutable);
+	#endif
+
+	return g_import;
+}
+
 void parse_types_section(Section * section, WASMModule * module){
 	TypeSection * typeS = (TypeSection*)allocate_and_register(sizeof(TypeSection));
 	
@@ -138,15 +226,7 @@ void parse_table_section(Section * section, WASMModule * module){
 	table_section->tables[0] = (TableImport * ) allocate_and_register(sizeof(TableImport)*count);
 
 	for(int i =0; i < count; i++){
-		TableImport * t_import = (TableImport*) allocate_and_register(sizeof(TableImport));
-		t_import->limit = readInt8(module->payload, &module->position);
-		t_import->limit = decode_var_uint32(module->payload, &module->position);
-		t_import->limit_initial = decode_var_uint32(module->payload, &module->position);
-
-		if(t_import->limit)
-			t_import->limit_maximum = decode_var_uint32(module->payload, &module->position);
-
-		table_section->tables[i] = t_import;
+		table_section->tables[i] = (TableImport*) parse_table_import(module);
 	}
 
 	section->instance = table_section;
@@ -155,6 +235,48 @@ void parse_table_section(Section * section, WASMModule * module){
 	#endif
 
 }
+
+
+void parse_memory_section(Section * section, WASMModule * module){
+	MemorySection * table_section = (MemorySection *) allocate_and_register(sizeof(MemorySection));
+	
+	int count = decode_var_uint32(module->payload, &module->position);
+	table_section->count = count;
+
+	table_section->memories[0] = (MemoryImport * ) allocate_and_register(sizeof(MemoryImport)*count);
+
+	for(int i =0; i < count; i++){
+		table_section->memories[i] = (MemoryImport*) parse_memory_import(module);
+	}
+
+	section->instance = table_section;
+	#ifdef DEBUG
+	printf("memory section count %d\n", count);
+	#endif
+
+}
+
+
+void parse_global_section(Section * section, WASMModule * module){
+	GlobalSection * global_section = (GlobalSection *) allocate_and_register(sizeof(GlobalSection));
+	
+	int count = decode_var_uint32(module->payload, &module->position);
+	global_section->count = count;
+
+	global_section->globals[0] = (GlobalImport * ) allocate_and_register(sizeof(GlobalImport)*count);
+
+	for(int i =0; i < count; i++){
+		global_section->globals[i] = (GlobalImport *) parse_global(module);
+	}
+
+	section->instance = global_section;
+	#ifdef DEBUG
+	printf("global section count %d\n", count);
+	#endif
+
+}
+
+
 
 void parse_import_section(Section * section, WASMModule * module){
 
@@ -191,42 +313,23 @@ void parse_import_section(Section * section, WASMModule * module){
 		{
 			case 0: // Function
 			{
-				FunctionImport * f_import = (FunctionImport*) allocate_and_register(sizeof(FunctionImport));
-				f_import->index = decode_var_uint32(module->payload, &module->position);
-				imports[i].import_kind = f_import;
+				imports[i].import_kind = parse_function_import(module);
 			}
 				break;
 			case 1: // Table
 				{
-					TableImport * t_import = (TableImport*) allocate_and_register(sizeof(TableImport));
-					t_import->limit = readInt8(module->payload, &module->position);
-					t_import->limit = decode_var_uint32(module->payload, &module->position);
-					t_import->limit_initial = decode_var_uint32(module->payload, &module->position);
-
-					if(t_import->limit)
-						t_import->limit_maximum = decode_var_uint32(module->payload, &module->position);
-
-					imports[i].import_kind = t_import;
+					imports[i].import_kind = parse_table_import(module);
 				}
 				break;
 			case 2: // Memory
 				{
-					MemoryImport * m_import = (MemoryImport*) allocate_and_register(sizeof(MemoryImport));
-					m_import->limit = decode_var_uint32(module->payload, &module->position);
-					m_import->limit_initial = decode_var_uint32(module->payload, &module->position);
-
-					if(m_import->limit)
-						m_import->limit_maximum = decode_var_uint32(module->payload, &module->position);
-
-					imports[i].import_kind = m_import;
+					
+					imports[i].import_kind = parse_memory_import(module);
 				}
 				break;
 			case 3: // Global
 				{
-					GlobalImport * g_import = (GlobalImport*) allocate_and_register(sizeof(GlobalImport));
-					g_import->content_type = readInt8(module->payload, &module->position);
-					g_import->is_mutable =readInt8(module->payload, &module->position);
-					imports[i].import_kind = g_import;
+					imports[i].import_kind = parse_global_import(module);
 
 				}
 				break;
@@ -274,14 +377,16 @@ Section* parse_section(WASMModule* module){
 		case 4: // Table section
 			parse_table_section(section, module);
 			break;
-/*
-
 		case 5: // Memory section
+			parse_memory_section(section, module);
 			break;
 		case 6: // Global section
+			parse_global_section(section, module);
 			break;
 		case 7: // Export section
 			break;
+/*
+
 		case 8: // Start section
 			break;
 		case 9: // Element section
