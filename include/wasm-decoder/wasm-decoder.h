@@ -100,6 +100,59 @@ typedef struct {
 	ExportEntry * exports[0];	
 } ExportSection;
 
+typedef struct {
+  unsigned int index;
+} StartSection;
+
+
+typedef struct {
+  unsigned int index;
+  unsigned int fcount;
+  unsigned int * findexes[0];
+} ElementEntry;
+
+
+typedef struct {
+  unsigned int count;
+  ElementEntry * elements[0];	
+} ElementSection;
+
+
+typedef struct{
+	unsigned int n;
+	char valtype;
+} LocalDef ;
+
+typedef struct{
+	unsigned int size;
+	unsigned int local_count;
+	LocalDef * locals[0];
+	// TODO add Code block
+} FunctionBody;
+
+typedef struct {
+  unsigned int count;
+  FunctionBody * functions[0];	
+} CodeSection;
+
+
+typedef struct {
+  unsigned int index;
+  unsigned int size;
+  char* data;
+} DataSegment;
+
+typedef struct {
+  unsigned int count;
+  DataSegment * segments[0];	
+} DataSection;
+
+typedef struct {
+  unsigned int name_len;
+  char* name;	
+  char* data;
+} CustomSection;
+
 
 typedef struct {
 
@@ -115,7 +168,8 @@ typedef struct WASMModules{
 	char* payload;
 	int position;
 	int count;
-	Section * sections[0];
+	int size;
+	Array sections;
 
 } WASMModule;
 
@@ -123,4 +177,4 @@ typedef struct WASMModules{
 
 Section* parse_section(WASMModule* module);
 
-void parse_wasm(char* bytes, int size);
+void parse_wasm(char* bytes, unsigned int size);

@@ -10,23 +10,17 @@ void add_section(WASMModule* module, Section* section){
 	#endif
 	module->count += 1;
 
-	#ifdef DEBUG
-	//printf("New sections size %d\n", module->count);
-	#endif
-	Section* sections = (Section*)allocate_and_register(sizeof(Section)*module->count);
-	
-	if(module->count > 1)
-		memcpy(sections, module->sections[0], sizeof(Section)*(module->count - 2));
-
-	module->sections[module->count - 1] = section;
-
-	//if(module->count > 1)
-	//	free(module->sections[0]);
-	module->sections[0] = sections;
+	insertArray(&module->sections, section);
 }
 
+
+void parse_expression(WASMModule * module){
+
+	// TODO
+	while((readInt8(module->payload, &module->position)) != OPCODE_END);
+}
 // Linearly parse WASM binary to construct tree structure
-void parse_wasm(char* bytes, int size){
+void parse_wasm(char* bytes, unsigned int sz){
 	// set offset to 0
 	int module_position = 0;
 
@@ -34,11 +28,14 @@ void parse_wasm(char* bytes, int size){
 	module.position = module_position;
 	module.payload = bytes;
 	module.count = 0;
+	module.size = sz;
+
+	initArray(&module.sections, sizeof(Section*));
 	
 	uint32 header = readUint32LE(bytes, &module.position);
 	
 	#ifdef DEBUG
-	printf("position %d\n", module.position);
+	printf("position %d %d\n", sz, module.position);
 	#endif
 	if(header != 0x6d736100){
 		#ifdef DEBUG
@@ -56,14 +53,15 @@ void parse_wasm(char* bytes, int size){
 	printf("WASM version %d\n", version);
 	#endif
 
-	while(module.position <= size){
+	while(module.size - module.position > 0){
 		// Create a module section
 		
 		Section* section = parse_section(&module);
+		add_section(&module, section);
 		#ifdef DEBUG
+		printf("%d size %d position \n", module.size, module.position);
 		//printf("After parsing section position %d\n", module.position);
 		#endif
-		add_section(&module, section);
 	}
 }
 
@@ -77,6 +75,88 @@ FunctionImport* parse_function_import(WASMModule * module){
 	f_import->index = decode_var_uint32(module->payload, &module->position);
 
 	return f_import;
+}
+
+
+ElementEntry* parse_element_entry(WASMModule * module){
+
+	#ifdef DEBUG
+	printf("parsing element entry\n");
+	#endif
+
+	ElementEntry * elem = (ElementEntry*) allocate_and_register(sizeof(ElementEntry));
+	elem->index = decode_var_uint32(module->payload, &module->position);
+	
+	parse_expression(module);
+
+	elem->fcount = decode_var_uint32(module->payload, &module->position);
+
+	for(int i = 0; i < elem->fcount; i++)
+		elem->findexes[i] = decode_var_uint32(module->payload, &module->position);
+
+	return elem;
+}
+
+
+DataSegment* parse_data_segment(WASMModule * module){
+
+	#ifdef DEBUG
+	printf("parsing data segment\n");
+	#endif
+
+	DataSegment * elem = (DataSegment*) allocate_and_register(sizeof(DataSegment));
+	elem->index = decode_var_uint32(module->payload, &module->position);
+	
+	parse_expression(module);
+
+	elem->size = decode_var_uint32(module->payload, &module->position);
+
+	char* data = (char*)allocate_and_register(elem->size);
+
+	memcpy(data, module->payload + module->position, elem->size);
+	module->position += elem->size;
+	elem->data = data;
+
+	return elem;
+}
+
+
+
+FunctionBody* parse_function_body(WASMModule * module){
+
+
+	FunctionBody * elem = (FunctionBody*) allocate_and_register(sizeof(FunctionBody));
+	elem->size = decode_var_uint32(module->payload, &module->position);
+	int pos = module->position;
+	elem->local_count = decode_var_uint32(module->payload, &module->position);
+
+	elem->locals[0] = (LocalDef*) allocate_and_register(sizeof(LocalDef)*elem->local_count);
+
+	#ifdef DEBUG
+	printf("parsing function body %d %d\n", elem->local_count, elem->size);
+	#endif
+
+	for(int i = 0; i < elem->local_count; i++){
+		elem->locals[i]->n = decode_var_uint32(module->payload, &module->position);
+		elem->locals[i]->valtype = readInt8(module->payload, &module->position);
+		
+		#ifdef DEBUG
+		printf("\t%d %02x \n", elem->locals[i]->n, elem->locals[i]->valtype);
+		#endif
+
+	}
+
+	parse_expression(module);
+	int count = module->position - pos;
+
+	module->position = module->position + (elem->size - count);
+
+
+	#ifdef DEBUG
+	printf("Size %d %d\n", count, elem->size);
+	#endif
+
+	return elem;
 }
 
 
@@ -146,7 +226,7 @@ Global* parse_global(WASMModule * module){
 	g_import->content_type = readInt8(module->payload, &module->position);
 	g_import->is_mutable = readInt8(module->payload, &module->position);
 	
-	while((readInt8(module->payload, &module->position)) != OPCODE_END);
+	parse_expression(module);
 
 	#ifdef DEBUG
 	printf("Global %02x %d\n", g_import->content_type & 0xff, g_import->is_mutable);
@@ -236,6 +316,13 @@ void parse_function_section(Section * section, WASMModule * module){
 
 }
 
+void parse_start_section(Section * section, WASMModule * module){
+	StartSection * table_section = (StartSection *) allocate_and_register(sizeof(StartSection));
+	
+	int index = decode_var_uint32(module->payload, &module->position);
+	
+	section->instance = table_section;
+}
 void parse_table_section(Section * section, WASMModule * module){
 	TableSection * table_section = (TableSection *) allocate_and_register(sizeof(TableSection));
 	
@@ -315,6 +402,94 @@ void parse_export_section(Section * section, WASMModule * module){
 
 }
 
+
+void parse_elem_section(Section * section, WASMModule * module){
+	ElementSection * export_section = (ElementSection *) allocate_and_register(sizeof(ElementSection));
+	
+	int count = decode_var_uint32(module->payload, &module->position);
+	export_section->count = count;
+
+	export_section->elements[0] = (ElementEntry * ) allocate_and_register(sizeof(ElementEntry)*count);
+
+	for(int i =0; i < count; i++){
+		export_section->elements[i] = (ElementEntry *) parse_element_entry(module);
+	}
+
+	section->instance = export_section;
+	#ifdef DEBUG
+	printf("export section count %d\n", count);
+	#endif
+
+}
+
+
+void parse_code_section(Section * section, WASMModule * module){
+	CodeSection * code_section = (CodeSection *) allocate_and_register(sizeof(CodeSection));
+	
+	int count = decode_var_uint32(module->payload, &module->position);
+	code_section->count = count;
+
+	code_section->functions[0] = (FunctionBody * ) allocate_and_register(sizeof(FunctionBody)*count);
+
+	for(int i =0; i < count; i++){
+		code_section->functions[i] = (FunctionBody *) parse_function_body(module);
+	}
+
+	section->instance = code_section;
+	#ifdef DEBUG
+	printf("export section count %d\n", count);
+	#endif
+
+}
+
+
+void parse_data_section(Section * section, WASMModule * module){
+	DataSection * data_section = (DataSection *) allocate_and_register(sizeof(DataSection));
+	
+	int count = decode_var_uint32(module->payload, &module->position);
+	data_section->count = count;
+
+	data_section->segments[0] = (DataSegment * ) allocate_and_register(sizeof(DataSegment)*count);
+
+	for(int i =0; i < count; i++){
+		data_section->segments[i] = (DataSegment *) parse_data_segment(module);
+	}
+
+	section->instance = data_section;
+	#ifdef DEBUG
+	printf("data section count %d\n", count);
+	#endif
+
+}
+
+void parse_custom_section(Section * section, WASMModule * module){
+	CustomSection * custom_section = (CustomSection *) allocate_and_register(sizeof(CustomSection));
+	
+	int startposition = module->position;
+	int name_len = decode_var_uint32(module->payload, &module->position);
+	custom_section->name_len = name_len;
+
+	char* name = (char*)allocate_and_register(name_len);
+	memcpy(name, module->payload + module->position, name_len);
+	module->position += name_len;
+
+	custom_section->name = name;
+
+	int pending = section->size - (module->position - startposition);
+	
+	char* data = (char*)allocate_and_register(pending);
+	//memcpy(pending, module->payload + module->position, pending);
+
+	#ifdef DEBUG
+	printf("custom section %d %d %s\n",section->size, pending, name);
+	#endif
+	module->position += pending;
+
+
+	custom_section->data = data;
+
+	section->instance = custom_section;
+}
 
 void parse_import_section(Section * section, WASMModule * module){
 
@@ -402,10 +577,8 @@ Section* parse_section(WASMModule* module){
 	switch (section->type)
 	{
 		case 1: // Types section
-			/* code */
 			parse_types_section(section, module);
 			break;
-		
 		case 2: // Import section
 			parse_import_section(section, module);
 			break;
@@ -424,21 +597,22 @@ Section* parse_section(WASMModule* module){
 		case 7: // Export section
 			parse_export_section(section, module);
 			break;
-		case 10: // Code section
-			break;
-/*
-
 		case 8: // Start section
+			parse_start_section(section, module);
 			break;
 		case 9: // Element section
+			parse_elem_section(section, module);
+			break;
+		case 10: // Code section
+			parse_code_section(section, module);
 			break;
 		case 11: // Data section
+			parse_data_section(section, module);
 			break;
 		case 0: // Custom
-			module->position += section->size;
-			break;*/
+			parse_custom_section(section, module);
+			break;
 	default:
-		module->position += section->size;
 		break;
 	}
 

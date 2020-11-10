@@ -19,3 +19,15 @@ char readInt8(char* buffer, int* offset);
 void* allocate_and_register(size_t sz);
 
 void free_all();
+
+typedef struct {
+  void * array;
+  int count;
+  int size;
+} Array;
+
+void init_array(Array *a, int initialSize);
+
+void insert_array(Array *a, void * element);
+
+void free_array(Array *a);

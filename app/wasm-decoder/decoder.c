@@ -13,16 +13,16 @@ int main(int argc, char * argv[]){
         fseek(in_file, 0L, SEEK_END);
 		size_t sz = ftell(in_file);
 		rewind(in_file);
-		printf("WASM Size %d\n", sz);
 		
 		char bytes[sz];
 		fread(bytes, sz, 1, in_file);
 		fclose(in_file);
 
+		printf("WASM Size %d\n", sz);
 		parse_wasm(bytes, sz);	
 
-		free_all();
-		
+		//free_all();
+
 		//free(bytes);
 
 		/*FILE *in_file  = fopen("name_of_file", "r"); // read only 
