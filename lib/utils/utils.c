@@ -33,7 +33,7 @@ char readInt8(char* buffer, int* offset){
 static void* allocations [MAX_ALLOCATIONS];
 static int allocation_index = 0;
 
-void* allocate_and_register(size_t sz){
+void* allocate_and_register(int sz){
 	if(allocation_index == MAX_ALLOCATIONS)
 	{
 		printf("Maximum number of allocations are reached!.");

@@ -250,6 +250,7 @@ ExportEntry* parse_export_entry(WASMModule * module){
 	char* field_name = (char*)allocate_and_register(export_entry->field_len + 1);
 	memcpy(field_name, module->payload + module->position, export_entry->field_len + 1);
 	module->position += export_entry->field_len;
+	field_name[export_entry->field_len] = 0;
 
 	export_entry->field_str = field_name;
 	export_entry->kind = readInt8(module->payload, &module->position);
@@ -291,7 +292,7 @@ void parse_types_section(Section * section, WASMModule * module){
 		}
 
 		int return_count = readInt8(module->payload, &module->position);
-
+		functpe->ret_count = return_count;
 		functpe->return_types = (char*)allocate_and_register(sizeof(return_count));
 		for(int j=0; j < return_count; j++){
 			char tpe = readInt8(module->payload, &module->position);

@@ -16,7 +16,7 @@ uint32 readUint32LE(char* buffer, int * offset);
 uint16 readUint16LE(char* buffer, int * offset);
 char readInt8(char* buffer, int* offset);
 
-void* allocate_and_register(size_t sz);
+void* allocate_and_register(int sz);
 
 void free_all();
 
