@@ -21,15 +21,6 @@ void* allocate_and_register(size_t sz);
 void free_all();
 
 typedef struct {
-
-	unsigned int section_offset;
-	unsigned int type;
-	unsigned int size;
-
-	void* instance; // ImportSectionPtr, TypeSectionPtr
-} Section;
-
-typedef struct {
   void * data;
   int count;
   int membersize;

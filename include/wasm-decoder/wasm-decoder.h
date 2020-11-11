@@ -59,12 +59,12 @@ typedef struct {
 
 typedef struct {
 	int count;
-	FuncTypeSection* sections[0];
+	Array types;
 } TypeSection;
 
 typedef struct {
 	int count;
-	ImportType* imports[0];
+	Array imports;
 } ImportSection;
 
 typedef struct {
@@ -74,18 +74,18 @@ typedef struct {
 
 typedef struct {
 	unsigned int count;
-	TableImport * tables[0];	
+	Array tables;	
 } TableSection;
 
 
 typedef struct {
 	unsigned int count;
-	MemoryImport * memories[0];	
+	Array memories;	
 } MemorySection;
 
 typedef struct {
 	unsigned int count;
-	GlobalImport * globals[0];	
+	Array globals;	
 } GlobalSection;
 
 typedef struct{
@@ -97,7 +97,7 @@ typedef struct{
 
 typedef struct {
 	unsigned int count;
-	ExportEntry * exports[0];	
+	Array exports;	
 } ExportSection;
 
 typedef struct {
@@ -114,7 +114,7 @@ typedef struct {
 
 typedef struct {
   unsigned int count;
-  ElementEntry * elements[0];	
+  Array  elements;	
 } ElementSection;
 
 
@@ -126,13 +126,13 @@ typedef struct{
 typedef struct{
 	unsigned int size;
 	unsigned int local_count;
-	LocalDef * locals[0];
+	Array locals;
 	// TODO add Code block
 } FunctionBody;
 
 typedef struct {
   unsigned int count;
-  FunctionBody * functions[0];	
+  Array functions;	
 } CodeSection;
 
 
@@ -144,7 +144,7 @@ typedef struct {
 
 typedef struct {
   unsigned int count;
-  DataSegment * segments[0];	
+  Array segments;	
 } DataSection;
 
 typedef struct {
@@ -153,6 +153,14 @@ typedef struct {
   char* data;
 } CustomSection;
 
+
+typedef struct {
+
+	unsigned int section_offset;
+	unsigned int type;
+	unsigned int size;
+	void* instance; // ImportSectionPtr, TypeSectionPtr
+} Section;
 
 
 typedef struct WASMModules{

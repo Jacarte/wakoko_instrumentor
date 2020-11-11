@@ -135,19 +135,21 @@ FunctionBody* parse_function_body(WASMModule * module){
 	int pos = module->position;
 	elem->local_count = decode_var_uint32(module->payload, &module->position);
 
-	elem->locals[0] = (LocalDef*) allocate_and_register(sizeof(LocalDef)*elem->local_count);
+	init_array(&elem->locals, elem->local_count, sizeof(LocalDef));
+
 
 	#ifdef DEBUG
 	printf("parsing function body %d %d\n", elem->local_count, elem->size);
 	#endif
 
 	for(int i = 0; i < elem->local_count; i++){
-		elem->locals[i]->n = decode_var_uint32(module->payload, &module->position);
-		elem->locals[i]->valtype = readInt8(module->payload, &module->position);
+
+	    LocalDef * local = (LocalDef*) allocate_and_register(sizeof(LocalDef));
+		local->n = decode_var_uint32(module->payload, &module->position);
+		local->valtype = readInt8(module->payload, &module->position);
 		
-		#ifdef DEBUG
-		printf("\t%d %02x \n", elem->locals[i]->n, elem->locals[i]->valtype);
-		#endif
+		insert_array(&elem->locals, local);
+
 
 	}
 
@@ -269,31 +271,34 @@ void parse_types_section(Section * section, WASMModule * module){
 	int count = decode_var_uint32(module->payload, &module->position);
 	
 	typeS->count = count;
-	typeS->sections[0] = (FuncTypeSection*)allocate_and_register(count*sizeof(FuncTypeSection));
+
+	init_array(&typeS->types, count, sizeof(FuncTypeSection));
 
 
 	for(int i =0; i < count; i++){
-		typeS->sections[i] = (FuncTypeSection*)allocate_and_register(sizeof(FuncTypeSection));
+		FuncTypeSection* functpe = (FuncTypeSection*)allocate_and_register(sizeof(FuncTypeSection));
 		
 		int form = decode_var_int32(module->payload, &module->position, 7);
-		typeS->sections[i]->form = form;
+		functpe->form = form;
 		
 		int param_count = decode_var_uint32(module->payload, &module->position);
-		typeS->sections[i]->param_count = param_count;
+		functpe->param_count = param_count;
 
-		typeS->sections[i]->param_types = (char*)allocate_and_register(sizeof(param_count));
+		functpe->param_types = (char*)allocate_and_register(sizeof(param_count));
 		for(int j = 0; j < param_count; j++){
 			char tpe = readInt8(module->payload, &module->position);
-			typeS->sections[i]->param_types[j] = tpe;
+			functpe->param_types[j] = tpe;
 		}
 
 		int return_count = readInt8(module->payload, &module->position);
 
-		typeS->sections[i]->return_types = (char*)allocate_and_register(sizeof(return_count));
+		functpe->return_types = (char*)allocate_and_register(sizeof(return_count));
 		for(int j=0; j < return_count; j++){
 			char tpe = readInt8(module->payload, &module->position);
-			typeS->sections[i]->return_types[j] = tpe;
+			functpe->return_types[j] = tpe;
 		}
+
+		insert_array(&typeS->types, functpe);
 	}
 
 	section->instance = typeS;
@@ -334,10 +339,11 @@ void parse_table_section(Section * section, WASMModule * module){
 	int count = decode_var_uint32(module->payload, &module->position);
 	table_section->count = count;
 
-	table_section->tables[0] = (TableImport * ) allocate_and_register(sizeof(TableImport)*count);
+	init_array(&table_section->tables, count, sizeof(TableImport));
 
 	for(int i =0; i < count; i++){
-		table_section->tables[i] = (TableImport*) parse_table_import(module);
+		TableImport* entry = (TableImport*) parse_table_import(module);
+		insert_array(&table_section->tables, entry);
 	}
 
 	section->instance = table_section;
@@ -349,18 +355,19 @@ void parse_table_section(Section * section, WASMModule * module){
 
 
 void parse_memory_section(Section * section, WASMModule * module){
-	MemorySection * table_section = (MemorySection *) allocate_and_register(sizeof(MemorySection));
+	MemorySection * memory_section = (MemorySection *) allocate_and_register(sizeof(MemorySection));
 	
 	int count = decode_var_uint32(module->payload, &module->position);
-	table_section->count = count;
+	memory_section->count = count;
 
-	table_section->memories[0] = (MemoryImport * ) allocate_and_register(sizeof(MemoryImport)*count);
+	init_array(&memory_section->memories, count, sizeof(MemoryImport));
 
 	for(int i =0; i < count; i++){
-		table_section->memories[i] = (MemoryImport*) parse_memory_import(module);
+		MemoryImport * entry = (MemoryImport*) parse_memory_import(module);
+		insert_array(&memory_section->memories, entry);
 	}
 
-	section->instance = table_section;
+	section->instance = memory_section;
 	#ifdef DEBUG
 	printf("memory section count %d\n", count);
 	#endif
@@ -374,10 +381,11 @@ void parse_global_section(Section * section, WASMModule * module){
 	int count = decode_var_uint32(module->payload, &module->position);
 	global_section->count = count;
 
-	global_section->globals[0] = (GlobalImport * ) allocate_and_register(sizeof(GlobalImport)*count);
+	init_array(&global_section->globals, count, sizeof(GlobalImport));
 
 	for(int i =0; i < count; i++){
-		global_section->globals[i] = (GlobalImport *) parse_global(module);
+		GlobalImport * global = (GlobalImport *) parse_global(module);
+		insert_array(&global_section->globals, global);
 	}
 
 	section->instance = global_section;
@@ -394,10 +402,11 @@ void parse_export_section(Section * section, WASMModule * module){
 	int count = decode_var_uint32(module->payload, &module->position);
 	export_section->count = count;
 
-	export_section->exports[0] = (ExportEntry * ) allocate_and_register(sizeof(ExportEntry)*count);
+	init_array(&export_section->exports, count, sizeof(ExportEntry));
 
 	for(int i =0; i < count; i++){
-		export_section->exports[i] = (ExportEntry *) parse_export_entry(module);
+		ExportEntry * entry = (ExportEntry *) parse_export_entry(module);
+		insert_array(&export_section->exports, entry);
 	}
 
 	section->instance = export_section;
@@ -414,10 +423,11 @@ void parse_elem_section(Section * section, WASMModule * module){
 	int count = decode_var_uint32(module->payload, &module->position);
 	export_section->count = count;
 
-	export_section->elements[0] = (ElementEntry * ) allocate_and_register(sizeof(ElementEntry)*count);
+	init_array(&export_section->elements, count, sizeof(ElementEntry));
 
 	for(int i =0; i < count; i++){
-		export_section->elements[i] = (ElementEntry *) parse_element_entry(module);
+		ElementEntry * elementEntry = (ElementEntry *) parse_element_entry(module);
+		insert_array(&export_section->elements, elementEntry);
 	}
 
 	section->instance = export_section;
@@ -434,10 +444,11 @@ void parse_code_section(Section * section, WASMModule * module){
 	int count = decode_var_uint32(module->payload, &module->position);
 	code_section->count = count;
 
-	code_section->functions[0] = (FunctionBody * ) allocate_and_register(sizeof(FunctionBody)*count);
+	init_array(&code_section->functions, count, sizeof(FunctionBody));
 
 	for(int i =0; i < count; i++){
-		code_section->functions[i] = (FunctionBody *) parse_function_body(module);
+		FunctionBody * body = (FunctionBody *) parse_function_body(module);
+		insert_array(&code_section->functions, body);
 	}
 
 	section->instance = code_section;
@@ -454,10 +465,11 @@ void parse_data_section(Section * section, WASMModule * module){
 	int count = decode_var_uint32(module->payload, &module->position);
 	data_section->count = count;
 
-	data_section->segments[0] = (DataSegment * ) allocate_and_register(sizeof(DataSegment)*count);
+	init_array(&data_section->segments, count, sizeof(DataSegment));
 
 	for(int i =0; i < count; i++){
-		data_section->segments[i] = (DataSegment *) parse_data_segment(module);
+		DataSegment* segment = (DataSegment *) parse_data_segment(module);
+		insert_array(&data_section->segments, segment);
 	}
 
 	section->instance = data_section;
@@ -503,10 +515,12 @@ void parse_import_section(Section * section, WASMModule * module){
 	int count = decode_var_uint32(module->payload, &module->position);
 	importSection->count = count;
 	
-	ImportType * imports = (ImportType*)allocate_and_register(sizeof(ImportType)*count);
+	init_array(&importSection->imports, count, sizeof(ImportType));
+
+	//
 
 	for(int i = 0; i < count; i++){
-
+		ImportType * import = (ImportType*)allocate_and_register(sizeof(ImportType));
 		int module_name_len = decode_var_uint32(module->payload, &module->position);
 		char* module_name = (char*)allocate_and_register(module_name_len + 1);
 		memcpy(module_name, module->payload + module->position, module_name_len + 1);
@@ -520,34 +534,34 @@ void parse_import_section(Section * section, WASMModule * module){
 
 		int kind = readInt8(module->payload, &module->position);
 
-		imports[i].kind = kind;
-		imports[i].module_name_len = module_name_len;
-		imports[i].module_name = module_name;
-		imports[i].field_name_len = field_name_len;
-		imports[i].field_name = field_name;
+		import->kind = kind;
+		import->module_name_len = module_name_len;
+		import->module_name = module_name;
+		import->field_name_len = field_name_len;
+		import->field_name = field_name;
 		
 
 		switch (kind)
 		{
 			case 0: // Function
 			{
-				imports[i].import_kind = parse_function_import(module);
+				import->import_kind = parse_function_import(module);
 			}
 				break;
 			case 1: // Table
 				{
-					imports[i].import_kind = parse_table_import(module);
+					import->import_kind = parse_table_import(module);
 				}
 				break;
 			case 2: // Memory
 				{
 					
-					imports[i].import_kind = parse_memory_import(module);
+					import->import_kind = parse_memory_import(module);
 				}
 				break;
 			case 3: // Global
 				{
-					imports[i].import_kind = parse_global_import(module);
+					import->import_kind = parse_global_import(module);
 
 				}
 				break;
@@ -556,10 +570,12 @@ void parse_import_section(Section * section, WASMModule * module){
 				break;
 		}
 
+		insert_array(&importSection->imports, import);
 	}
 
-	importSection->imports[0] = imports;
+	//importSection->imports[0] = imports;
 
+	section->instance = importSection;
 	#ifdef DEBUG
 	printf("Import section count %d\n", count);
 	#endif
