@@ -67,7 +67,7 @@ int main(int argc, char * argv[]){
 
 					}
 				}
-
+				break;
 			case 3:
 				{
 					FunctionSection * funcSection = (FunctionSection *) s.instance;
@@ -132,7 +132,7 @@ int main(int argc, char * argv[]){
 				{
 					CodeSection * memSection = (CodeSection *) s.instance;
 
-					printf("export count %d\n", memSection->count);
+					printf("Code count %d\n", memSection->count);
 					for(int i = 0; i < memSection->count; i++){
 						FunctionBody tpe;
 						get_element(&memSection->functions,i, &tpe); 
@@ -145,7 +145,7 @@ int main(int argc, char * argv[]){
 				{
 					DataSection * memSection = (DataSection *) s.instance;
 
-					printf("export count %d\n", memSection->count);
+					printf("Data count %d\n", memSection->count);
 					for(int i = 0; i < memSection->count; i++){
 						DataSegment tpe;
 						get_element(&memSection->segments,i, &tpe); 

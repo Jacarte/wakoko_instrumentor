@@ -17,10 +17,15 @@ void add_section(WASMModule* module, Section* section){
 }
 
 
-void parse_expression(WASMModule * module){
+char * parse_expression(WASMModule * module){
 
-	// TODO
-	while((readInt8(module->payload, &module->position)) != OPCODE_END);
+	int count = 0;
+	while((readInt8(module->payload, &module->position)) != OPCODE_END) count++;
+
+	char* code_chunk = (char*)allocate_and_register(count);
+	memcpy(code_chunk, module->payload - count, count);
+
+	return code_chunk;
 }
 // Linearly parse WASM binary to construct tree structure
 WASMModule* parse_wasm(char* bytes, unsigned int sz){
@@ -92,7 +97,7 @@ ElementEntry* parse_element_entry(WASMModule * module){
 	ElementEntry * elem = (ElementEntry*) allocate_and_register(sizeof(ElementEntry));
 	elem->index = decode_var_uint32(module->payload, &module->position);
 	
-	parse_expression(module);
+	elem->init_code_chunk = parse_expression(module);
 
 	elem->fcount = decode_var_uint32(module->payload, &module->position);
 
@@ -112,7 +117,7 @@ DataSegment* parse_data_segment(WASMModule * module){
 	DataSegment * elem = (DataSegment*) allocate_and_register(sizeof(DataSegment));
 	elem->index = decode_var_uint32(module->payload, &module->position);
 	
-	parse_expression(module);
+	elem->init_chunk_code = parse_expression(module);
 
 	elem->size = decode_var_uint32(module->payload, &module->position);
 
@@ -153,9 +158,11 @@ FunctionBody* parse_function_body(WASMModule * module){
 
 	}
 
-	parse_expression(module);
+	//parse_expression(module);
 	int count = module->position - pos;
-
+	elem->code_chunk = (char*)allocate_and_register(elem->size - count);
+	memcpy(elem->code_chunk, module->payload, elem->size - count);
+	
 	module->position = module->position + (elem->size - count);
 
 
@@ -233,7 +240,7 @@ Global* parse_global(WASMModule * module){
 	g_import->content_type = readInt8(module->payload, &module->position);
 	g_import->is_mutable = readInt8(module->payload, &module->position);
 	
-	parse_expression(module);
+	g_import->init = parse_expression(module);
 
 	#ifdef DEBUG
 	printf("Global %02x %d\n", g_import->content_type & 0xff, g_import->is_mutable);
@@ -318,8 +325,11 @@ void parse_function_section(Section * section, WASMModule * module){
 	function_section->types = (int*)allocate_and_register(sizeof(int)*count);
 
 	for(int i =0; i < count; i++)
-		function_section->types[i] = decode_var_uint32(module->payload, &module->position);
+	{
+		function_section->types[i] = 0;
 
+		function_section->types[i] = decode_var_uint32(module->payload, &module->position);
+	}
 	section->instance = function_section;
 	#ifdef DEBUG
 	printf("Function section count %d\n", count);

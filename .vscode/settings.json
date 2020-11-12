@@ -3,6 +3,7 @@
 		"cstddef": "c",
 		"functional": "c",
 		"algorithm": "c",
-		"typeinfo": "c"
+		"typeinfo": "c",
+		"*.tcc": "cpp"
 	}
 }

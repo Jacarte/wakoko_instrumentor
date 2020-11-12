@@ -33,9 +33,10 @@ typedef struct {
 } MemoryImport;
 
 
-typedef struct {
+typedef struct  {
 	char content_type;
 	char is_mutable;
+	char* init_code_chunk;
 } GlobalImport;
 
 typedef struct {
@@ -85,10 +86,10 @@ typedef struct {
 
 typedef struct {
 	unsigned int count;
-	Array globals;	
+	Array globals;	// GlobalImport *
 } GlobalSection;
 
-typedef struct{
+typedef struct {
 	unsigned int field_len;
 	char* field_str;
 	char kind;
@@ -109,6 +110,7 @@ typedef struct {
   unsigned int index;
   unsigned int fcount;
   unsigned int * findexes[0];
+  char* init_code_chunk;
 } ElementEntry;
 
 
@@ -118,16 +120,16 @@ typedef struct {
 } ElementSection;
 
 
-typedef struct{
+typedef struct {
 	unsigned int n;
 	char valtype;
-} LocalDef ;
+}  LocalDef;
 
-typedef struct{
+typedef struct {
 	unsigned int size;
 	unsigned int local_count;
 	Array locals;
-	// TODO add Code block
+	char* code_chunk;
 } FunctionBody;
 
 typedef struct {
@@ -139,6 +141,7 @@ typedef struct {
 typedef struct {
   unsigned int index;
   unsigned int size;
+  char* init_chunk_code;
   char* data;
 } DataSegment;
 
@@ -163,7 +166,7 @@ typedef struct {
 } Section;
 
 
-typedef struct WASMModules{
+typedef struct{
 
 	char* payload;
 	int position;
