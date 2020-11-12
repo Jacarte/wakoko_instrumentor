@@ -123,3 +123,87 @@
 #define I32_SHR 0x76
 #define I32_ROTL 0x77
 #define I32_ROTR 0x78
+// i64
+#define I64_CLZ 0x79
+#define I64_CTZ 0x7a
+#define I64_POP_CNT 0x7b
+#define I64_ADD 0x7c
+#define I64_SUB 0x7d
+#define I64_MUL 0x7e
+#define I64_DIV_SIGNED 0x7f
+#define I64_DIV 0x80
+#define I64_REM_SIGNED 0x81
+#define I64_REM 0x82
+#define I64_AND 0x83
+#define I64_OR 0x84
+#define I64_XOR 0x85
+#define I64_SHL 0x86
+#define I64_SHR_SIGNED 0x87
+#define I64_SHR 0x88
+#define I64_ROTL 0x89
+#define I64_ROTR 0x8a
+// f32
+#define F32_ABS 0x8b
+#define F32_NEG 0x8c
+#define F32_CEIL 0x8d
+#define F32_FLOOR 0x8e
+#define F32_TRUNC 0x8f
+#define F32_NEAREST 0x90
+#define F32_SQRT 0x91
+#define F32_ADD 0x92
+#define F32_SUB 0x93
+#define F32_MUL 0x94
+#define F32_DIV 0x95
+#define F32_MIN 0x96
+#define F32_MAX 0x97
+#define F32_COPY_SIGN 0x98
+// f64
+#define F64_ABS 0x99
+#define F64_NEG 0x9a
+#define F64_CEIL 0x9b
+#define F64_FLOOR 0x9c
+#define F64_TRUNC 0x9d
+#define F64_NEAREST 0x9e
+#define F64_SQRT 0x9f
+#define F64_ADD 0xa0
+#define F64_SUB 0xa1
+#define F64_MUL 0xa2
+#define F64_DIV 0xa3
+#define F64_MIN 0xa4
+#define F64_MAX 0xa5
+#define F64_COPY_SIGN 0xa6
+
+//Conversions
+#define WRAP_I32_I64 0xa7
+#define TRUNC_CONV_I32_F32_SIGNED 0xa8
+#define TRUNC_CONV_I32_F32 0xa9
+#define TRUNC_CONV_I32_F64_SIGNED 0xaa
+#define TRUNC_CONV_I32_F64 0xab
+
+#define EXTEND_I32_I64_SIGNED 0xac
+#define EXTEND_I32_I64 0xad
+
+#define TRUNC_CONV_I64_F32_SIGNED 0xae
+#define TRUNC_CONV_I64_F32 0xaf
+
+
+#define TRUNC_CONV_I64_F64_SIGNED 0xb0
+#define TRUNC_CONV_I64_F64 0xb1
+
+#define CONVERT_F32_F64_SIGNED 0xb2
+#define CONVERT_F32_F64 0xb3
+#define CONVERT_F32_I64_SIGNED 0xb4
+#define CONVERT_F32_I64 0xb5
+
+#define DEMOTE_F32_I64 0xb6
+#define CONVERT_F64_I32_SIGNED 0xb7
+#define CONVERT_F64_I32 0xb8
+#define CONVERT_F64_I64_SIGNED 0xb9
+#define CONVERT_F64_I64 0xba
+#define CONVERT_F64_F32 0xbb
+
+// REINTRERPRETATION
+#define REINTERPRET_I32_F32 0xbc
+#define REINTERPRET_I64_F64 0xbd
+#define REINTERPRET_F32_I32 0xbe
+#define REINTERPRET_F64_I64 0xbf
