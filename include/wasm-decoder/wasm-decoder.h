@@ -1,8 +1,9 @@
+#ifndef WASM_DECODER
+#define WASM_DECODER
 #include <stdio.h>
 #include <include/utils/utils.h>
 #include <include/utils/leb128.h>
 #include <include/wasm-decoder/opcodes.h>
-#include <string.h> 
 
 typedef struct {
 	int form;
@@ -174,6 +175,10 @@ typedef struct{
 	int size;
 	Array sections;
 
+	// DIRECT ACCESS FOR LATER USAGE
+	GlobalSection *  globalSection;  
+	CodeSection * codeSection;
+	ExportSection * exportSection;
 } WASMModule;
 
 #define READ_AND_CONSUME_BUFFER_PIECE(buffer, offset, size, dst) memcpy(dst, buffer + offset, size); BYTE_OFFSET += size;
@@ -181,3 +186,5 @@ typedef struct{
 Section* parse_section(WASMModule* module);
 
 WASMModule* parse_wasm(char* bytes, unsigned int size);
+
+#endif

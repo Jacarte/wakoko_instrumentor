@@ -1,5 +1,5 @@
 
-OBJS = utils.o leb128.o wasm-decoder.o 
+OBJS = utils.o leb128.o wasm-decoder.o wasm-encoder.o
 LINK := $(addprefix  $(L)/,$(OBJS))
 
 

@@ -1,4 +1,6 @@
 
+#ifndef OPCODES
+#define OPCODES
 
 #define OPCODE_END 0x0B
 
@@ -207,3 +209,5 @@
 #define REINTERPRET_I64_F64 0xbd
 #define REINTERPRET_F32_I32 0xbe
 #define REINTERPRET_F64_I64 0xbf
+
+#endif

@@ -1,6 +1,7 @@
 
 #include <stdio.h>
 #include <include/wasm-decoder/wasm-decoder.h>
+#include <include/wasm-decoder/wasm-encoder.h>
 
 int main(int argc, char * argv[]){
 	if(argc > 1){
@@ -19,7 +20,23 @@ int main(int argc, char * argv[]){
 		fclose(in_file);
 
 		WASMModule* module = parse_wasm(bytes, sz);	
+		printf("CORRECT DECODING %d\n", module->size);
 
+		char*  out = (char*)allocate_and_register(module->size);
+
+		encode_wasm(module, out);
+		printf("CORRECT ENCODING\n");
+
+		FILE* outFile = fopen("test.wasm", "w");
+
+		if(outFile == NULL){
+			printf("Error! Could not open file\n"); 
+			exit(-1); // must include stdlib.h 
+		}
+
+		fwrite(out, module->size, 1, outFile);
+		fclose(outFile);
+/*
 		printf("Checking  traversal\n");
 
 		Section s;
@@ -158,7 +175,7 @@ int main(int argc, char * argv[]){
 				break;
 			}
 
-		}
+		}*/
 
 		free_all();
 

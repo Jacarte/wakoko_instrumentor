@@ -61,17 +61,17 @@ void encode_var_uint_leb128(unsigned int value, unsigned int padding, char* outp
 	do{
 		b = value & 127;
 		value = value >> 7;
-		if(value !=0|| padding >0)
+		if(value !=0)
 		{
-			b =  b | 128;
+			b =  b | 0x80;
 		}
-		output[MAX_LEB_SIZE - index--] = b;
+		output[index++] = b;
 		padding--;
 
 	}while(value != 0 || padding > -1);
 
 
-	(*size) = index;
+	(*size) += index;
 }
 
 

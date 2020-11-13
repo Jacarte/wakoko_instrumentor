@@ -14,6 +14,8 @@ typedef unsigned int  uint16;
 
 uint32 readUint32LE(char* buffer, int * offset);
 uint16 readUint16LE(char* buffer, int * offset);
+void writeUint32LE(char* out, int number, int * pointer);
+
 char readInt8(char* buffer, int* offset);
 
 void* allocate_and_register(int sz);

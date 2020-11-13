@@ -22,6 +22,15 @@ uint16 readUint16LE(char* buffer, int* offset){
 	return result;	
 }
 
+void writeUint32LE(char* out, int number, int * pointer){
+	out[3] = (number >>  24) & 0xFF;
+	out[2] = (number >>  16) & 0xFF;
+	out[1] = (number >>  8) & 0xFF;
+	out[0] = (number) & 0xFF;
+	
+	(*pointer) += 4;
+}
+
 
 char readInt8(char* buffer, int* offset){
 	char result = (0xff & buffer[*offset]);
