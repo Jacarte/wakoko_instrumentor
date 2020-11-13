@@ -5,8 +5,7 @@ LINK := $(addprefix  $(L)/,$(OBJS))
 
 all: program
 	$(CC) $(CCFLAGS)  $(LINK) decoder.o -o decoder.out
-	./decoder.out $(RESOURCES)/wasms/addition_chains.wasm
-	wasm2wat test.wasm -o t.wat -v
+	bash run_all.sh $(RESOURCES)/wasms
 	mv *.o $(BUILD)
 	mv *.out $(BIN)
 
