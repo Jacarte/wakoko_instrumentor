@@ -5,7 +5,11 @@ LINK := $(addprefix  $(L)/,$(OBJS))
 
 all: program
 	$(CC) $(CCFLAGS)  $(LINK) decoder.o -o decoder.out
-	bash run_all.sh $(RESOURCES)/wasms
+
+	#./decoder.out $(RESOURCES)/wasms/lua.opt.wasm
+	#wasm2wat test.wasm -o t.wat -v 
+	bash validate_all.sh $(RESOURCES)/wasms
+
 	mv *.o $(BUILD)
 	mv *.out $(BIN)
 

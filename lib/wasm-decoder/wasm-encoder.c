@@ -62,6 +62,19 @@ void encode_table_section(TableSection* typesSection, char* out, WASMModule* mod
 
 }
 
+void encode_custom_section(CustomSection* custom_section, char* out, WASMModule* module, int* position){
+
+
+	// Section payload
+	encode_var_uint_leb128(/*section type*/custom_section->name_len, 0, out + *position, position);
+	memcpy(out + *position, custom_section->name, custom_section->name_len);
+	(*position)+=custom_section->name_len;
+
+	memcpy(out + *position, custom_section->data, custom_section->data_size);
+	(*position)+= custom_section->data_size;
+}
+
+
 void encode_memory_section(MemorySection* section, char* out, WASMModule* module, int* position){
 
 
@@ -100,7 +113,7 @@ void encode_global_section(GlobalSection* section, char* out, WASMModule* module
 		(*position)+=1;
 		
 		memcpy(out + *position, s.init, s.code_size);
-		printf("%02x \n", s.init[0]);
+		//printf("%02x \n", s.init[0]);
 		(*position) += s.code_size;
 	}
 
@@ -161,6 +174,33 @@ void encode_code_section(CodeSection* section, char* out, WASMModule* module, in
 }
 
 
+void encode_element_section(ElementSection* section, char* out, WASMModule* module, int* position){
+
+	printf("Element section\n");
+
+	// Section payload
+	encode_var_uint_leb128(/*section type*/section->count, 0, out + *position, position);
+
+	printf("Element section size %d\n", section->count);
+	ElementEntry s;
+	for(int i = 0; i < section->count; i++){
+		get_element(&section->elements, i, &s);
+
+		encode_var_uint_leb128(s.index, 0, out + *position, position);
+
+		memcpy(out + *position, s.init_code_chunk, s.code_size);
+		(*position)+=s.code_size;
+		
+		encode_var_uint_leb128(s.fcount, 0, out + *position, position);
+		//printf("\tElement entry %d\n", s.fcount);
+		for(int j = 0; j < s.fcount; j++){
+			int fidx = s.findexes[j];
+			encode_var_uint_leb128(fidx,0, out + *position, position);
+		}
+	}
+
+}
+
 
 void encode_data_section(DataSection* section, char* out, WASMModule* module, int* position){
 
@@ -218,7 +258,7 @@ void encode_import_section(ImportSection* typesSection, char* out, WASMModule* m
 
 		/// write field name
 		encode_var_uint_leb128(s.field_name_len, 0, out + *position, position);
-		memcpy(out + *position, s.field_name, s.field_name_len);
+		memcpy(out + *position, s.field_name, s.field_name_len + 1);
 		(*position) += s.field_name_len;
 
 		(out + *position)[0] = s.kind;
@@ -368,6 +408,14 @@ void encode_wasm(WASMModule* module, char* out){
 			}
 			
 		break;
+		case 9:
+			{
+				ElementSection * elemSection = (ElementSection *) s.instance;
+				encode_element_section(elemSection, out, module, &position);
+
+			}
+			
+		break;
 		case 11:
 			{
 				DataSection * dataSection = (DataSection *) s.instance;
@@ -375,6 +423,15 @@ void encode_wasm(WASMModule* module, char* out){
 			}
 			
 		break;
+		
+		case 0:
+			{
+				CustomSection * customSection = (CustomSection *) s.instance;
+				encode_custom_section(customSection, out, module, &position);
+			}
+			
+		break;
+		
 		default:
 			break;
 		}

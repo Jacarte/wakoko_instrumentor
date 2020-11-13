@@ -110,10 +110,10 @@ typedef struct {
 
 typedef struct {
   unsigned int index;
-  unsigned int fcount;
-  unsigned int * findexes[0];
-  int size;
+  int code_size;
   char* init_code_chunk;
+  unsigned int fcount;
+  int * findexes;
 } ElementEntry;
 
 
@@ -158,6 +158,7 @@ typedef struct {
 typedef struct {
   unsigned int name_len;
   char* name;	
+  int data_size;
   char* data;
 } CustomSection;
 

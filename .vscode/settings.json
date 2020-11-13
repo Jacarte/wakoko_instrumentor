@@ -4,6 +4,11 @@
 		"functional": "c",
 		"algorithm": "c",
 		"typeinfo": "c",
-		"*.tcc": "cpp"
+		"*.tcc": "cpp",
+		"array": "c",
+		"string_view": "c",
+		"initializer_list": "c",
+		"ranges": "c",
+		"utility": "c"
 	}
 }

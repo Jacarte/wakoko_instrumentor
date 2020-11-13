@@ -24,12 +24,12 @@ char * parse_expression(WASMModule * module, int * size){
 
 	do{
 
-		printf(" %02x", module->payload[module->position] & 0xFF);
+		//printf(" %02x", module->payload[module->position] & 0xFF);
 		count++;
 	}
 	while((readInt8(module->payload, &module->position)) != OPCODE_END);
 
-	printf("\n");
+	//printf(" %d\n", count);
 	char* code_chunk = (char*)allocate_and_register(count);
 	memcpy(code_chunk, init, count);
 	(*size) = count;
@@ -105,9 +105,13 @@ ElementEntry* parse_element_entry(WASMModule * module){
 	ElementEntry * elem = (ElementEntry*) allocate_and_register(sizeof(ElementEntry));
 	elem->index = decode_var_uint32(module->payload, &module->position);
 	
-	elem->init_code_chunk = parse_expression(module, &elem->size);
+	printf("parsing element entry size %d\n", elem->code_size);
+	int size;
+	elem->init_code_chunk = parse_expression(module, &size);
+	elem->code_size = size;
 
 	elem->fcount = decode_var_uint32(module->payload, &module->position);
+	elem->findexes = (int*)allocate_and_register(sizeof(int)*elem->fcount);
 
 	for(int i = 0; i < elem->fcount; i++)
 		elem->findexes[i] = decode_var_uint32(module->payload, &module->position);
@@ -515,10 +519,10 @@ void parse_custom_section(Section * section, WASMModule * module){
 	custom_section->name = name;
 
 	int pending = section->size - (module->position - startposition);
-	
+	custom_section->data_size = pending;
 	char* data = (char*)allocate_and_register(pending);
-	//memcpy(pending, module->payload + module->position, pending);
-
+	memcpy(data, module->payload + module->position, pending);
+	custom_section->data_size = pending;
 	#ifdef DEBUG
 	//printf("custom section %d %d %s\n",section->size, pending, name);
 	#endif
@@ -550,12 +554,14 @@ void parse_import_section(Section * section, WASMModule * module){
 
 
 		int field_name_len = decode_var_uint32(module->payload, &module->position);
-		char* field_name = (char*)allocate_and_register(module_name_len + 1);
+		char* field_name = (char*)allocate_and_register(field_name_len + 1);
 		memcpy(field_name, module->payload + module->position, field_name_len + 1);
 		module->position += field_name_len;
 
+
 		int kind = readInt8(module->payload, &module->position);
 
+		//printf("%s %s %d\n", module_name, field_name, kind);
 		import->kind = kind;
 		import->module_name_len = module_name_len;
 		import->module_name = module_name;

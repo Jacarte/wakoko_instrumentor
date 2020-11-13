@@ -25,11 +25,17 @@ do
 			# getting wasm2wat output
 
 			wasm2wat $f -o t1.wat -v > t1.logs
-			wasm2wat test.wasm -o t2.wat -v > t2.logs
+			wasm2wat test.wasm -o t2.wat -v  2> t.err.logs > t2.logs
+
+			wasm-validate test.wasm > validation.txt
 
 			DIFF=$(diff t1.logs t2.logs)
+			ERRORS=$(cat t.err.logs)
+			VALIDATION=$(cat validation.txt)
+			printf "\t\n\nERROR: $ERRORS\n" >> check.txt
+			printf "\t\n\VALIDATION: $VALIDATION\n" >> check.txt
 			printf "\t\n\n$DIFF\n" >> check.txt
-			rm t1.wat t2.wat t1.logs t2.logs
+			rm t1.wat t2.wat t1.logs t2.logs t.err.logs validation.txt
 		fi
 
 
