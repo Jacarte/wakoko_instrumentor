@@ -144,6 +144,12 @@ void encode_export_section(ExportSection* section, char* out, WASMModule* module
 }
 
 
+void encode_start_section(StartSection* section, char* out, WASMModule* module, int* position){
+	// Section payload
+	encode_var_uint_leb128(/*section type*/section->index, 0, out + *position, position);
+}
+
+
 
 void encode_code_section(CodeSection* section, char* out, WASMModule* module, int* position){
 
@@ -190,7 +196,7 @@ void encode_element_section(ElementSection* section, char* out, WASMModule* modu
 
 		memcpy(out + *position, s.init_code_chunk, s.code_size);
 		(*position)+=s.code_size;
-		
+
 		encode_var_uint_leb128(s.fcount, 0, out + *position, position);
 		//printf("\tElement entry %d\n", s.fcount);
 		for(int j = 0; j < s.fcount; j++){
@@ -220,7 +226,7 @@ void encode_data_section(DataSection* section, char* out, WASMModule* module, in
 
 		encode_var_uint_leb128(s.size, 0, out + *position, position);
 
-		memcpy(out + *position, s.data, s.code_size);
+		memcpy(out + *position, s.data, s.size);
 		(*position)+=s.size;
 	}
 
@@ -400,13 +406,11 @@ void encode_wasm(WASMModule* module, char* out){
 
 			}
 		break;
-		case 10:
+		case 8:
 			{
-				CodeSection * codeSection = (CodeSection *) s.instance;
-				encode_code_section(codeSection, out, module, &position);
-
+				StartSection * startSection = (StartSection *) s.instance;
+				encode_start_section(startSection, out, module, &position);
 			}
-			
 		break;
 		case 9:
 			{
@@ -416,6 +420,15 @@ void encode_wasm(WASMModule* module, char* out){
 			}
 			
 		break;
+		case 10:
+			{
+				CodeSection * codeSection = (CodeSection *) s.instance;
+				encode_code_section(codeSection, out, module, &position);
+
+			}
+			
+		break;
+		
 		case 11:
 			{
 				DataSection * dataSection = (DataSection *) s.instance;

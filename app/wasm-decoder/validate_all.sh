@@ -1,6 +1,7 @@
 WASMS_DIR=$1
 
 echo "CHECKSUMS" > check.txt
+echo "SUCCESS $f" > success.txt
 mkdir -p logs
 for f in $WASMS_DIR/*.wasm
 do
@@ -9,7 +10,7 @@ do
 
 	name="$(basename -- $f)"
 	echo $name $f $m51
-	./decoder.out $f
+	./decoder.out "$f"
     
 	if [ -f "test.wasm" ]; then
 
@@ -17,9 +18,9 @@ do
 
 		m52=$(md5sum test.wasm | awk '{print $1}' )
 
-		echo $m51 $m52 >> check.txt
 
 		if [ $m51 != $m52 ]; then
+			echo $m51 $m52 >> check.txt
 			printf "\t$f not the same checksum\n" >> check.txt
 
 			# getting wasm2wat output
@@ -35,7 +36,14 @@ do
 			printf "\t\n\nERROR: $ERRORS\n" >> check.txt
 			printf "\t\n\VALIDATION: $VALIDATION\n" >> check.txt
 			printf "\t\n\n$DIFF\n" >> check.txt
+			
+			cp t1.wat logs/$name.orig.wat 
+			cp t2.wat logs/$name.wakoko.wat
+
 			rm t1.wat t2.wat t1.logs t2.logs t.err.logs validation.txt
+ 
+		else
+			echo "SUCCESS $f" >> success.txt
 		fi
 
 
