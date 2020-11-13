@@ -38,7 +38,8 @@ typedef struct {
 typedef struct  {
 	char content_type;
 	char is_mutable;
-	char* init_code_chunk;
+	int code_size;
+	char* init;
 } GlobalImport;
 
 typedef struct {
@@ -95,7 +96,7 @@ typedef struct {
 typedef struct {
 	int size;
 	unsigned int count;
-	Array globals;	// GlobalImport *
+	Array globals;	// Global *
 } GlobalSection;
 
 typedef struct {

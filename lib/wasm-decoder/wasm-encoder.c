@@ -107,7 +107,7 @@ void encode_global_section(GlobalSection* section, char* out, WASMModule* module
 	// Section payload
 	encode_var_uint_leb128(/*section type*/section->count, 0, out + *position, position);
 
-	Global s;
+	GlobalImport s;
 	for(int i = 0; i < section->count; i++){
 		get_element(&section->globals, i, &s);
 
@@ -118,7 +118,9 @@ void encode_global_section(GlobalSection* section, char* out, WASMModule* module
 		(*position)+=1;
 		
 		memcpy(out + *position, s.init, s.code_size);
-		//printf("%02x \n", s.init[0]);
+		//for(int j = 0; j < s.code_size; j++)
+			//printf("%02x ", s.init[j] & 0xff);
+		//printf("\n");
 		(*position) += s.code_size;
 	}
 
@@ -156,40 +158,12 @@ void encode_start_section(StartSection* section, char* out, WASMModule* module, 
 	encode_var_uint_leb128(/*section type*/section->index, 0, out + *position, position);
 }
 
-int get_code_section_size(CodeSection* section){
-	
-	int total = 0;
-
-	FunctionBody s;
-	for(int i = 0; i < section->count; i++){
-		get_element(&section->functions, i, &s);
-		total += s.code_size;
-		printf("code size %d\n", s.size);
-
-		LocalDef ld;
-		for(int j = 0; j < s.local_count; j++){
-			get_element(&s.locals, j, &ld);
-			total += get_encoding_size(ld.valtype, 0);; // ld -> valtype
-			total += get_encoding_size(ld.n, 0);
-		}
-
-		total += get_encoding_size(s.local_count, 0);
-		total += get_encoding_size(s.size, 0);
-	}
-
-	printf("SIZE %d\n", total);
-	int size = get_encoding_size(/*section type*/section->count, 0);
-	printf("SIZE %d %d %d\n", total, size, section->size);
-
-	return total + size;
-}
-
 
 void encode_code_section(CodeSection* section, char* out, WASMModule* module, int* position){
 
 
 	encode_var_uint_leb128(
-		get_code_section_size(section), 
+		recalculate_code_section_size(section), 
 		0, 
 		out + *position, 
 		position);

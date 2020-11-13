@@ -182,7 +182,7 @@ int main(int argc, char * argv[]){
 
 		}*/
 
-		free_all();
+		//free_all();
 
 		//free(bytes);
 

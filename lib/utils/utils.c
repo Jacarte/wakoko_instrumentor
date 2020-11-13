@@ -70,8 +70,9 @@ void insert_array(Array *a, void * element) {
   // a->used is the number of used entries, because a->array[a->used++] updates a->used only *after* the array has been accessed.
   // Therefore a->used can go up to a->size 
   if (a->count == a->size) {
+	  printf("Increasing size %d\n", a->size);
     a->size *= 2;
-    a->data = realloc(a->data, a->size);
+    a->data = realloc(a->data, a->size*a->membersize);
   }
 
   void* target = (char*)a->data + (a->count*a->membersize);

@@ -332,7 +332,7 @@ void parse_types_section(Section * section, WASMModule * module, int size){
 void parse_function_section(Section * section, WASMModule * module, int size){
 	FunctionSection * function_section = (FunctionSection*)allocate_and_register(sizeof(FunctionSection));
 	function_section->size = size;
-	
+
 	int count = decode_var_uint32(module->payload, &module->position);
 	function_section->count = count;
 
@@ -414,6 +414,10 @@ void parse_global_section(Section * section, WASMModule * module, int size){
 
 	for(int i =0; i < count; i++){
 		GlobalImport * global = (GlobalImport *) parse_global(module);
+		
+		for(int j = 0; j < global->code_size; j++)
+			printf("%02x ", global->init[j] & 0xff);
+		printf("\n");
 		insert_array(&global_section->globals, global);
 	}
 

@@ -7,7 +7,7 @@
 #define ANSI_COLOR_CYAN    "\x1b[36m"
 #define ANSI_COLOR_RESET   "\x1b[0m"
 
-#define MAX_ALLOCATIONS 10000
+#define MAX_ALLOCATIONS 40000
 
 typedef unsigned long  uint32;
 typedef unsigned int  uint16;
