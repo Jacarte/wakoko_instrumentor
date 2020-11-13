@@ -17,14 +17,22 @@ void add_section(WASMModule* module, Section* section){
 }
 
 
-char * parse_expression(WASMModule * module){
+char * parse_expression(WASMModule * module, int * size){
 
 	int count = 0;
-	while((readInt8(module->payload, &module->position)) != OPCODE_END) count++;
+	char* init = module->payload + module->position;
 
+	do{
+
+		printf(" %02x", module->payload[module->position] & 0xFF);
+		count++;
+	}
+	while((readInt8(module->payload, &module->position)) != OPCODE_END);
+
+	printf("\n");
 	char* code_chunk = (char*)allocate_and_register(count);
-	memcpy(code_chunk, module->payload - count, count);
-
+	memcpy(code_chunk, init, count);
+	(*size) = count;
 	return code_chunk;
 }
 // Linearly parse WASM binary to construct tree structure
@@ -97,7 +105,7 @@ ElementEntry* parse_element_entry(WASMModule * module){
 	ElementEntry * elem = (ElementEntry*) allocate_and_register(sizeof(ElementEntry));
 	elem->index = decode_var_uint32(module->payload, &module->position);
 	
-	elem->init_code_chunk = parse_expression(module);
+	elem->init_code_chunk = parse_expression(module, &elem->size);
 
 	elem->fcount = decode_var_uint32(module->payload, &module->position);
 
@@ -117,7 +125,7 @@ DataSegment* parse_data_segment(WASMModule * module){
 	DataSegment * elem = (DataSegment*) allocate_and_register(sizeof(DataSegment));
 	elem->index = decode_var_uint32(module->payload, &module->position);
 	
-	elem->init_chunk_code = parse_expression(module);
+	elem->init_chunk_code = parse_expression(module, &elem->code_size);
 
 	elem->size = decode_var_uint32(module->payload, &module->position);
 
@@ -239,8 +247,7 @@ Global* parse_global(WASMModule * module){
 	Global * g_import = (Global*) allocate_and_register(sizeof(Global));
 	g_import->content_type = readInt8(module->payload, &module->position);
 	g_import->is_mutable = readInt8(module->payload, &module->position);
-	
-	g_import->init = parse_expression(module);
+	g_import->init = parse_expression(module, &g_import->code_size);
 
 	#ifdef DEBUG
 	//printf("Global %02x %d\n", g_import->content_type & 0xff, g_import->is_mutable);

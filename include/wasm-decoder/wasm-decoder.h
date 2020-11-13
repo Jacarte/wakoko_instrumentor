@@ -43,6 +43,7 @@ typedef struct  {
 typedef struct {
 	char content_type;
 	char is_mutable;
+	int code_size;
 	char* init;
 } Global;
 
@@ -111,6 +112,7 @@ typedef struct {
   unsigned int index;
   unsigned int fcount;
   unsigned int * findexes[0];
+  int size;
   char* init_code_chunk;
 } ElementEntry;
 
@@ -142,6 +144,7 @@ typedef struct {
 typedef struct {
   unsigned int index;
   unsigned int size;
+  int code_size;
   char* init_chunk_code;
   char* data;
 } DataSegment;

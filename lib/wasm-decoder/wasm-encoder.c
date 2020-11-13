@@ -39,6 +39,85 @@ void encode_types_section(TypeSection* typesSection, char* out, WASMModule* modu
 }
 
 
+void encode_table_section(TableSection* typesSection, char* out, WASMModule* module, int* position){
+
+
+	// Section payload
+	encode_var_uint_leb128(/*section type*/typesSection->count, 0, out + *position, position);
+
+	TableImport s;
+	for(int i = 0; i < typesSection->count; i++){
+		get_element(&typesSection->tables, i, &s);
+
+		(out + *position)[0] = s.elem_type;
+		(*position)+=1;
+
+		encode_var_uint_leb128(s.limit, 0, out + *position, position);
+		encode_var_uint_leb128(s.limit_initial, 0, out + *position, position);
+
+		if(s.limit)
+			encode_var_uint_leb128(s.limit_maximum, 0, out + *position, position);
+
+	}
+
+}
+
+void encode_memory_section(MemorySection* section, char* out, WASMModule* module, int* position){
+
+
+	// Section payload
+	encode_var_uint_leb128(/*section type*/section->count, 0, out + *position, position);
+
+	MemoryImport s;
+	for(int i = 0; i < section->count; i++){
+		get_element(&section->memories, i, &s);
+
+		encode_var_uint_leb128(s.limit, 0, out + *position, position);
+		encode_var_uint_leb128(s.limit_initial, 0, out + *position, position);
+
+		if(s.limit)
+			encode_var_uint_leb128(s.limit_maximum, 0, out + *position, position);
+
+	}
+
+}
+
+
+void encode_global_section(GlobalSection* section, char* out, WASMModule* module, int* position){
+
+
+	// Section payload
+	encode_var_uint_leb128(/*section type*/section->count, 0, out + *position, position);
+
+	Global s;
+	for(int i = 0; i < section->count; i++){
+		get_element(&section->globals, i, &s);
+
+		(out + *position)[0] = s.content_type;
+		(*position)+=1;
+
+		(out + *position)[0] = s.is_mutable;
+		(*position)+=1;
+		
+		memcpy(out + *position, s.init, s.code_size);
+		printf("%02x \n", s.init[0]);
+		(*position) += s.code_size;
+	}
+
+}
+
+
+void encode_function_section(FunctionSection* section, char* out, WASMModule* module, int* position){
+
+	// Section payload
+	encode_var_uint_leb128(/*section type*/section->count, 0, out + *position, position);
+
+	for(int i = 0; i < section->count; i++){
+		// write form
+		encode_var_uint_leb128(section->types[i], 0, out + *position, position);
+	}
+
+}
 
 void encode_import_section(ImportSection* typesSection, char* out, WASMModule* module, int* position){
 
@@ -172,26 +251,26 @@ void encode_wasm(WASMModule* module, char* out){
 		case 3:
 			{
 				FunctionSection * funcSection = (FunctionSection *) s.instance;
-
+				encode_function_section(funcSection, out, module, &position);
 			}
 			break;
 		case 4:
 			{
 				TableSection * tableSection = (TableSection *) s.instance;
-
+				encode_table_section(tableSection, out, module, &position);
 			}
 		break;
 		case 5:
 			{
 				MemorySection * memSection = (MemorySection *) s.instance;
-
+				encode_memory_section(memSection, out, module, &position);
 			}
 		break;
 		
 		case 6:
 			{
-				GlobalSection * memSection = (GlobalSection *) s.instance;
-
+				GlobalSection * globalSection = (GlobalSection *) s.instance;
+				encode_global_section(globalSection, out, module, &position);
 			}
 			break;
 		case 7:
