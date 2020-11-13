@@ -107,6 +107,86 @@ void encode_global_section(GlobalSection* section, char* out, WASMModule* module
 }
 
 
+void encode_export_section(ExportSection* section, char* out, WASMModule* module, int* position){
+
+
+	// Section payload
+	encode_var_uint_leb128(/*section type*/section->count, 0, out + *position, position);
+
+	ExportEntry s;
+	for(int i = 0; i < section->count; i++){
+		get_element(&section->exports, i, &s);
+
+		// write module name
+		encode_var_uint_leb128(s.field_len, 0, out + *position, position);
+		memcpy(out + *position, s.field_str, s.field_len);
+		(*position) += s.field_len;
+
+		
+		(out + *position)[0] = s.kind;
+		(*position)+=1;
+		encode_var_uint_leb128(s.index, 0, out + *position, position);
+	}
+
+}
+
+
+
+void encode_code_section(CodeSection* section, char* out, WASMModule* module, int* position){
+
+
+	// Section payload
+	encode_var_uint_leb128(/*section type*/section->count, 0, out + *position, position);
+
+	FunctionBody s;
+	for(int i = 0; i < section->count; i++){
+		get_element(&section->functions, i, &s);
+
+		// write module name
+		encode_var_uint_leb128(s.size, 0, out + *position, position);
+		encode_var_uint_leb128(s.local_count, 0, out + *position, position);
+
+		LocalDef local;
+		for(int j = 0; j < s.local_count; j++){
+			get_element(&s.locals, j, &local);
+			encode_var_uint_leb128(local.n, 0, out + *position, position);
+			(out + *position)[0] = local.valtype;
+			(*position)+=1;
+		}
+
+		memcpy(out + *position, s.code_chunk, s.code_size);
+		(*position)+=s.code_size;
+	}
+
+}
+
+
+
+void encode_data_section(DataSection* section, char* out, WASMModule* module, int* position){
+
+
+	// Section payload
+	encode_var_uint_leb128(/*section type*/section->count, 0, out + *position, position);
+
+	DataSegment s;
+	for(int i = 0; i < section->count; i++){
+		get_element(&section->segments, i, &s);
+
+		// write module name
+		encode_var_uint_leb128(s.index, 0, out + *position, position);
+
+		memcpy(out + *position, s.init_chunk_code, s.code_size);
+		(*position)+=s.code_size;
+
+		encode_var_uint_leb128(s.size, 0, out + *position, position);
+
+		memcpy(out + *position, s.data, s.code_size);
+		(*position)+=s.size;
+	}
+
+}
+
+
 void encode_function_section(FunctionSection* section, char* out, WASMModule* module, int* position){
 
 	// Section payload
@@ -275,20 +355,23 @@ void encode_wasm(WASMModule* module, char* out){
 			break;
 		case 7:
 			{
-				ExportSection * memSection = (ExportSection *) s.instance;
+				ExportSection * exportSection = (ExportSection *) s.instance;
+				encode_export_section(exportSection, out, module, &position);
 
 			}
 		break;
 		case 10:
 			{
-				CodeSection * memSection = (CodeSection *) s.instance;
+				CodeSection * codeSection = (CodeSection *) s.instance;
+				encode_code_section(codeSection, out, module, &position);
 
 			}
 			
 		break;
 		case 11:
 			{
-				DataSection * memSection = (DataSection *) s.instance;
+				DataSection * dataSection = (DataSection *) s.instance;
+				encode_data_section(dataSection, out, module, &position);
 			}
 			
 		break;

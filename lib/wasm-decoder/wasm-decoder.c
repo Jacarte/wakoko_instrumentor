@@ -169,7 +169,8 @@ FunctionBody* parse_function_body(WASMModule * module){
 	//parse_expression(module);
 	int count = module->position - pos;
 	elem->code_chunk = (char*)allocate_and_register(elem->size - count);
-	memcpy(elem->code_chunk, module->payload, elem->size - count);
+	elem->code_size = elem->size - count;
+	memcpy(elem->code_chunk, module->payload + module->position, elem->size - count);
 	
 	module->position = module->position + (elem->size - count);
 

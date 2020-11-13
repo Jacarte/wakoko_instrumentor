@@ -132,6 +132,7 @@ typedef struct {
 	unsigned int size;
 	unsigned int local_count;
 	Array locals;
+	int code_size;
 	char* code_chunk;
 } FunctionBody;
 
