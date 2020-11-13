@@ -345,7 +345,7 @@ void encode_import_section(ImportSection* typesSection, char* out, WASMModule* m
 
 }
 
-void encode_wasm(WASMModule* module, char* out){
+int encode_wasm(WASMModule* module, char* out){
 
 	int position = 0;
 
@@ -353,13 +353,14 @@ void encode_wasm(WASMModule* module, char* out){
 	writeUint32LE(out,0x6d736100, &position);
 
 	// WRITE VERSION  1
-	writeUint32LE( out + position,1,  &position);
+	writeUint32LE( out + position, module->version,  &position);
 
 	Section s;
 	for(int i = 0; i < module->count; i++){
 		
 		get_element(&module->sections, i, &s);
 		encode_section_header(&s, out, &position);
+		//printf("Encoding %d\n", s.type);
 		switch (s.type)
 		{
 		case 1: // types
@@ -446,8 +447,11 @@ void encode_wasm(WASMModule* module, char* out){
 		break;
 		
 		default:
+			printf("UNKNNOWN bad parsing\n");
 			break;
 		}
 
 	}
+
+	return position;
 }

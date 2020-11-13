@@ -24,7 +24,7 @@ int main(int argc, char * argv[]){
 
 		char*  out = (char*)allocate_and_register(module->size);
 
-		encode_wasm(module, out);
+		int toWrite = encode_wasm(module, out);
 		printf("CORRECT ENCODING\n");
 
 		FILE* outFile = fopen("test.wasm", "w");
@@ -34,7 +34,7 @@ int main(int argc, char * argv[]){
 			exit(-1); // must include stdlib.h 
 		}
 
-		fwrite(out, module->size, 1, outFile);
+		fwrite(out, toWrite, 1, outFile);
 		fclose(outFile);
 /*
 		printf("Checking  traversal\n");

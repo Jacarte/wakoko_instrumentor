@@ -6,9 +6,11 @@ LINK := $(addprefix  $(L)/,$(OBJS))
 all: program
 	$(CC) $(CCFLAGS)  $(LINK) decoder.o -o decoder.out
 
-	#./decoder.out $(RESOURCES)/wasms/lua.opt.wasm
-	#wasm2wat test.wasm -o t.wat -v 
-	bash validate_all.sh $(RESOURCES)/wasms
+	./decoder.out $(RESOURCES)/wasms/Chinese_zodiac.orig.wasm 
+	cp $(RESOURCES)/wasms/Chinese_zodiac.orig.wasm  orig.wasm
+	wasm2wat orig.wasm -o t2.wat -v > logs.orig.txt
+	wasm2wat test.wasm -o t.wat -v > logs.txt
+	#bash validate_all.sh $(RESOURCES)/wasms
 
 	mv *.o $(BUILD)
 	mv *.out $(BIN)

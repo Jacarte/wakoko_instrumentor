@@ -60,6 +60,7 @@ WASMModule* parse_wasm(char* bytes, unsigned int sz){
 	}
 	
 	uint16 version = readUint16LE(bytes, &module->position);
+	module->version = version;
 	//module.position += 4;
 		
 	#ifdef DEBUG

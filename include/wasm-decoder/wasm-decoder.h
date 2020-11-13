@@ -178,6 +178,8 @@ typedef struct{
 	int position;
 	int count;
 	int size;
+	int version;
+	
 	Array sections;
 
 	// DIRECT ACCESS FOR LATER USAGE
