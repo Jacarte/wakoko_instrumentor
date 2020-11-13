@@ -14,7 +14,7 @@ test_resources_dir := $(PWD)/test-resources
 
 #$(leb128test): $(libraries)
 
-FLAGS="-DDEBUG"
+FLAGS=""
 CCFLAGS="-Wall"
 
 .PHONY: all

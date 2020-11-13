@@ -3,15 +3,16 @@
 void encode_section_header(Section * section, char* out, int* position){
 
 	encode_var_uint_leb128(section->type, 0, out + *position, position);
-	encode_var_uint_leb128(section->size, 0, out + *position, position);
 }
 
 void encode_types_section(TypeSection* typesSection, char* out, WASMModule* module, int* position){
 
 
+	encode_var_uint_leb128(typesSection->size, 0, out + *position, position);
 	// Section payload
 	encode_var_uint_leb128(/*section type*/typesSection->count, 0, out + *position, position);
 
+	
 	FuncTypeSection s;
 	for(int i = 0; i < typesSection->count; i++){
 		get_element(&typesSection->types, i, &s);
@@ -41,6 +42,7 @@ void encode_types_section(TypeSection* typesSection, char* out, WASMModule* modu
 
 void encode_table_section(TableSection* typesSection, char* out, WASMModule* module, int* position){
 
+	encode_var_uint_leb128(typesSection->size, 0, out + *position, position);
 
 	// Section payload
 	encode_var_uint_leb128(/*section type*/typesSection->count, 0, out + *position, position);
@@ -64,6 +66,7 @@ void encode_table_section(TableSection* typesSection, char* out, WASMModule* mod
 
 void encode_custom_section(CustomSection* custom_section, char* out, WASMModule* module, int* position){
 
+	encode_var_uint_leb128(custom_section->size, 0, out + *position, position);
 
 	// Section payload
 	encode_var_uint_leb128(/*section type*/custom_section->name_len, 0, out + *position, position);
@@ -77,6 +80,7 @@ void encode_custom_section(CustomSection* custom_section, char* out, WASMModule*
 
 void encode_memory_section(MemorySection* section, char* out, WASMModule* module, int* position){
 
+	encode_var_uint_leb128(section->size, 0, out + *position, position);
 
 	// Section payload
 	encode_var_uint_leb128(/*section type*/section->count, 0, out + *position, position);
@@ -98,6 +102,7 @@ void encode_memory_section(MemorySection* section, char* out, WASMModule* module
 
 void encode_global_section(GlobalSection* section, char* out, WASMModule* module, int* position){
 
+	encode_var_uint_leb128(section->size, 0, out + *position, position);
 
 	// Section payload
 	encode_var_uint_leb128(/*section type*/section->count, 0, out + *position, position);
@@ -122,6 +127,7 @@ void encode_global_section(GlobalSection* section, char* out, WASMModule* module
 
 void encode_export_section(ExportSection* section, char* out, WASMModule* module, int* position){
 
+	encode_var_uint_leb128(section->size, 0, out + *position, position);
 
 	// Section payload
 	encode_var_uint_leb128(/*section type*/section->count, 0, out + *position, position);
@@ -146,16 +152,49 @@ void encode_export_section(ExportSection* section, char* out, WASMModule* module
 
 void encode_start_section(StartSection* section, char* out, WASMModule* module, int* position){
 	// Section payload
+	encode_var_uint_leb128(section->size, 0, out + *position, position);
 	encode_var_uint_leb128(/*section type*/section->index, 0, out + *position, position);
 }
 
+int get_code_section_size(CodeSection* section){
+	
+	int total = 0;
+
+	FunctionBody s;
+	for(int i = 0; i < section->count; i++){
+		get_element(&section->functions, i, &s);
+		total += s.code_size;
+		printf("code size %d\n", s.size);
+
+		LocalDef ld;
+		for(int j = 0; j < s.local_count; j++){
+			get_element(&s.locals, j, &ld);
+			total += get_encoding_size(ld.valtype, 0);; // ld -> valtype
+			total += get_encoding_size(ld.n, 0);
+		}
+
+		total += get_encoding_size(s.local_count, 0);
+		total += get_encoding_size(s.size, 0);
+	}
+
+	printf("SIZE %d\n", total);
+	int size = get_encoding_size(/*section type*/section->count, 0);
+	printf("SIZE %d %d %d\n", total, size, section->size);
+
+	return total + size;
+}
 
 
 void encode_code_section(CodeSection* section, char* out, WASMModule* module, int* position){
 
 
+	encode_var_uint_leb128(
+		get_code_section_size(section), 
+		0, 
+		out + *position, 
+		position);
 	// Section payload
-	encode_var_uint_leb128(/*section type*/section->count, 0, out + *position, position);
+	encode_var_uint_leb128(section->count, 0, out + *position, position);
 
 	FunctionBody s;
 	for(int i = 0; i < section->count; i++){
@@ -181,6 +220,7 @@ void encode_code_section(CodeSection* section, char* out, WASMModule* module, in
 
 
 void encode_element_section(ElementSection* section, char* out, WASMModule* module, int* position){
+	encode_var_uint_leb128(section->size, 0, out + *position, position);
 
 	printf("Element section\n");
 
@@ -210,7 +250,7 @@ void encode_element_section(ElementSection* section, char* out, WASMModule* modu
 
 void encode_data_section(DataSection* section, char* out, WASMModule* module, int* position){
 
-
+	encode_var_uint_leb128(section->size, 0, out + *position, position);
 	// Section payload
 	encode_var_uint_leb128(/*section type*/section->count, 0, out + *position, position);
 
@@ -234,7 +274,7 @@ void encode_data_section(DataSection* section, char* out, WASMModule* module, in
 
 
 void encode_function_section(FunctionSection* section, char* out, WASMModule* module, int* position){
-
+	encode_var_uint_leb128(section->size, 0, out + *position, position);
 	// Section payload
 	encode_var_uint_leb128(/*section type*/section->count, 0, out + *position, position);
 
@@ -247,7 +287,7 @@ void encode_function_section(FunctionSection* section, char* out, WASMModule* mo
 
 void encode_import_section(ImportSection* typesSection, char* out, WASMModule* module, int* position){
 
-
+	encode_var_uint_leb128(typesSection->size, 0, out + *position, position);
 	// Section payload
 	encode_var_uint_leb128(/*section type*/typesSection->count, 0, out + *position, position);
 

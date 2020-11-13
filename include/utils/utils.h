@@ -35,4 +35,9 @@ void insert_array(Array *a, void * element);
 
 void get_element(Array *a, unsigned int position, void * element);
 
+void set_element(Array *a, unsigned int position, void * element);
+
 void free_array(Array *a);
+
+
+int get_encoding_size(unsigned int value, unsigned int padding);

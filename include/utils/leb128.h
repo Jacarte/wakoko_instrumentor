@@ -1,6 +1,5 @@
 #define MAX_LEB_SIZE 10
 
-
 unsigned int decode_var_int32(char *buffer, int* offset, int size);
 
 unsigned int decode_var_uint32(char* buffer, int* offset);

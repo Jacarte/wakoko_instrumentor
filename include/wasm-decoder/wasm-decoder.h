@@ -6,6 +6,7 @@
 #include <include/wasm-decoder/opcodes.h>
 
 typedef struct {
+	int size;
 	int form;
 	unsigned int param_count;
 	char* param_types;
@@ -61,32 +62,38 @@ typedef struct {
 } ImportType;
 
 typedef struct {
+	int size;
 	int count;
 	Array types;
 } TypeSection;
 
 typedef struct {
+	int size;
 	int count;
 	Array imports;
 } ImportSection;
 
 typedef struct {
+	int size;
 	unsigned int count;
 	int* types;
 } FunctionSection;
 
 typedef struct {
+	int size;
 	unsigned int count;
 	Array tables;	
 } TableSection;
 
 
 typedef struct {
+	int size;
 	unsigned int count;
 	Array memories;	
 } MemorySection;
 
 typedef struct {
+	int size;
 	unsigned int count;
 	Array globals;	// GlobalImport *
 } GlobalSection;
@@ -99,11 +106,13 @@ typedef struct {
 } ExportEntry;
 
 typedef struct {
+	int size;
 	unsigned int count;
 	Array exports;	
 } ExportSection;
 
 typedef struct {
+  int size;
   unsigned int index;
 } StartSection;
 
@@ -118,6 +127,7 @@ typedef struct {
 
 
 typedef struct {
+  int size;
   unsigned int count;
   Array  elements;	
 } ElementSection;
@@ -137,6 +147,7 @@ typedef struct {
 } FunctionBody;
 
 typedef struct {
+  int size;
   unsigned int count;
   Array functions;	
 } CodeSection;
@@ -151,11 +162,13 @@ typedef struct {
 } DataSegment;
 
 typedef struct {
+  int size;
   unsigned int count;
   Array segments;	
 } DataSection;
 
 typedef struct {
+  int size;
   unsigned int name_len;
   char* name;	
   int data_size;
@@ -167,7 +180,6 @@ typedef struct {
 
 	unsigned int section_offset;
 	unsigned int type;
-	unsigned int size;
 	void* instance; // ImportSectionPtr, TypeSectionPtr
 } Section;
 
@@ -179,7 +191,7 @@ typedef struct{
 	int count;
 	int size;
 	int version;
-	
+
 	Array sections;
 
 	// DIRECT ACCESS FOR LATER USAGE

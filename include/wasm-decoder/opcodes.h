@@ -33,7 +33,7 @@
 #define SET_LOCAL 0x21
 #define TEE_LOCAL 0x22
 #define GET_GLOBAL 0x23
-#define SET_GLOBALs 0x24
+#define SET_GLOBAL 0x24
 
 
 

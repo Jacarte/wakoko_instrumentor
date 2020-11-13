@@ -85,6 +85,11 @@ void get_element(Array *a, unsigned int position, void * element) {
   memcpy(element, target, a->membersize);
 }
 
+void set_element(Array *a, unsigned int position, void * element) {
+  void* target = (char*)a->data + (position*a->membersize);
+  memcpy(target,element, a->membersize);
+}
+
 void free_array(Array *a) {
   a->data = NULL;
   a->count = a->size = 0;

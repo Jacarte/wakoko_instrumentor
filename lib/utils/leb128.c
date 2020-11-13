@@ -74,6 +74,29 @@ void encode_var_uint_leb128(unsigned int value, unsigned int padding, char* outp
 	(*size) += index;
 }
 
+// Return the size of the LEB128 buffer
+int get_encoding_size(unsigned int value, unsigned int padding){
+
+	unsigned int b = 0;
+	int index = 0;
+
+	do{
+		b = value & 127;
+		value = value >> 7;
+		if(value !=0)
+		{
+			b =  b | 0x80;
+		}
+		//output[index++] = b;
+		index++;
+		padding--;
+
+	}while(value != 0 || padding > -1);
+
+
+	return index;
+}
+
 
 
 /*

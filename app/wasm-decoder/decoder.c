@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <include/wasm-decoder/wasm-decoder.h>
 #include <include/wasm-decoder/wasm-encoder.h>
+#include <include/wasm-decoder/wakoko.h>
 
 int main(int argc, char * argv[]){
 	if(argc > 1){
@@ -22,7 +23,11 @@ int main(int argc, char * argv[]){
 		WASMModule* module = parse_wasm(bytes, sz);	
 		printf("CORRECT DECODING %d\n", module->size);
 
-		char*  out = (char*)allocate_and_register(module->size);
+		#ifndef DEBUG
+		make_coverage_instrumentation(module);
+		#endif
+
+		char*  out = (char*)allocate_and_register(MAX_OUT_SIZE);
 
 		int toWrite = encode_wasm(module, out);
 		printf("CORRECT ENCODING\n");
