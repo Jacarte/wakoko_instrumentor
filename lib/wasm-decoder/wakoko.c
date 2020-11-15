@@ -375,6 +375,12 @@ void make_coverage_instrumentation(WASMModule* module){
 					printf("0x%02x\n", OPCODE & 0xff);
 					break;
 				// MEMORY
+				case  CURRENT_MEMORY:
+					printf("CURRENT MEMORY", OPCODE & 0xff);
+				break;
+				case  GROW_MEMORY:
+					printf("GROW MEMORY", OPCODE & 0xff);
+				break;
 				case I32_STORE8:
 				case I32_STORE16:
 				case I32_STORE:
