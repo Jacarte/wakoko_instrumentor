@@ -1,6 +1,7 @@
 #ifndef WASM_DECODER
 #define WASM_DECODER
 #include <stdio.h>
+#include <string.h>
 #include <include/utils/utils.h>
 #include <include/utils/leb128.h>
 #include <include/wasm-decoder/opcodes.h>
@@ -199,7 +200,7 @@ typedef struct{
 	char has_global_section;
 	char has_code_section;
 	char has_export_section;
-	
+
 	GlobalSection *  globalSection;  
 	CodeSection * codeSection;
 	ExportSection * exportSection;

@@ -63,21 +63,27 @@ int recalculate_exports_section_size(ExportSection* section){
 
 	int size = get_encoding_size(/*section type*/section->count, 0);
 
-	printf("NEW EXPORT SECTION SIZE %d %d\n", section->size, total +  size);
+	#ifdef WAKOKO_PRINT
+		printf("NEW EXPORT SECTION SIZE %d %d\n", section->size, total +  size);
+	#endif
 	return total + size;
 }
 
 
 void print_indent(int size){
+	#ifdef WAKOKO_PRINT
 	for(int i = 0; i < size; i++)
-		printf("\t");
+			printf("\t");
+	#endif
 }
 
 void bypass_sencoding(int size, char* current_code, int* current_index, char* instrumented_code, int* instrumented_index){
 	char byte = current_code[(*current_index)++];
 	instrumented_code[(*instrumented_index)++] = byte;
 	int mask = (-1 << (size - 1)) & 0x7f;
-	printf("byte %02x %d %d\n", byte & 0x7f, size, mask);
+	#ifdef WAKOKO_PRINT
+		printf("byte %02x %d %d\n", byte & 0x7f, size, mask);
+	#endif
 
 	if(size >= 7 || (byte & mask) == 0 || (byte & mask) == mask ){
 		if( byte & 0x80 != 0 ){
@@ -105,13 +111,17 @@ void bypass_blocktype(char* instrumented_out, char* current_code, int *instrumen
 	|| block_type == 0x7d 
 	|| block_type == 0x7c 
 	|| block_type == 0x7e){
-		printf("Regular block type one byte 0x%02x\n", block_type);
+	#ifdef WAKOKO_PRINT
+			printf("Regular block type one byte 0x%02x\n", block_type);
+	#endif
 		instrumented_out[(*instrumented_index)++] = block_type;
 		(*current_index)++;
 	}else{
-		printf("Custom block type %02x\n", block_type);
+	#ifdef WAKOKO_PRINT
+			printf("Custom block type %02x\n", block_type);
+	#endif
 		bypass_sencoding(32, current_code, current_index, instrumented_out, instrumented_index);
-		//printf("%d\n", *current_index);
+		
 	}
 
 }
@@ -129,7 +139,6 @@ char* create_id(int id, int * size){
 	}
 	*(size) = index;
 
-	//printf("%lld %lld\n",idStr, idStr + (NEW_ID_BUFFER_SIZE - index));
 	idStr[NEW_ID_BUFFER_SIZE - index] ='c';
 	return idStr + (NEW_ID_BUFFER_SIZE - index);
 }
@@ -156,7 +165,9 @@ int bypass_var_uint(char* original_buffer, int* original_offset, char* instrumen
 
 void instrument(char* instrumented_out, int* instrumentation_index, int pad, int* globals){
 	
-	printf("INSTRUMENTING...\n");
+	#ifdef WAKOKO_PRINT
+		printf("INSTRUMENTING...\n");
+	#endif
 	instrumented_out[(*instrumentation_index)++] = GET_GLOBAL;
 	encode_var_uint_leb128((*globals) + pad, 0, instrumented_out + *instrumentation_index, instrumentation_index);
 	instrumented_out[(*instrumentation_index)++] = I32_CONST;
@@ -183,9 +194,9 @@ void make_coverage_instrumentation(WASMModule* module){
 		// NOTHING to instrument
 		return;
 	}
+	printf("INSTRUMENTING %d \n", module->codeSection->count);
 	for(int i = 0; i < module->codeSection->count; i++){
 		get_element(&module->codeSection->functions, i, &body);
-		printf("Instrumenting for coverage %d \n", i);
 		int position = 0;
 
 		// FUNCTION START
@@ -198,7 +209,9 @@ void make_coverage_instrumentation(WASMModule* module){
 
 			// INJECT CODE HERE
 			if(inject){
-				printf("INJECTING...%02x\n", OPCODE);
+	#ifdef WAKOKO_PRINT
+					printf("INJECTING...%02x\n", OPCODE);
+	#endif
 				instrument(CODE_BUFFER, &position, pad, &globals);
 				inject = 0;
 			}
@@ -208,46 +221,78 @@ void make_coverage_instrumentation(WASMModule* module){
 			{
 				// variable access
 				case GET_LOCAL:
-					printf("GET LOCAL\n");
+				{
+	#ifdef WAKOKO_PRINT
+						printf("GET LOCAL\n");
+	#endif
 					bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position);
+				}
 				break;
 				case GET_GLOBAL:
-					printf("GET GLOBAL\n");
+				{
+	#ifdef WAKOKO_PRINT
+						printf("GET GLOBAL\n");
+	#endif
 					bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position);
+				}
 				break;
 				case SET_GLOBAL:
 				{
 					int index = bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position);
-					printf("SET GLOBAL %d\n", index);
+	#ifdef WAKOKO_PRINT
+						printf("SET GLOBAL %d\n", index);
+	#endif
 				}
 				break;
 				case SET_LOCAL:		
 					{			
 						int index = bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position);
-						printf("SET LOCAL %d\n", index);
+	#ifdef WAKOKO_PRINT
+							printf("SET LOCAL %d\n", index);
+	#endif
 					}
 				break;
 				case TEE_LOCAL:
-					printf("LOCAL TEE\n");
+				{
+	#ifdef WAKOKO_PRINT
+						printf("LOCAL TEE\n");
+	#endif
 					bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position);
+				}
 				break;
 
 				// Constants
 				case I32_CONST:
-					printf("I32 CONST\n");
+				{
+	#ifdef WAKOKO_PRINT
+						printf("I32 CONST\n");
+	#endif
 					bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position);
+				}
 				break;
 				case I64_CONST:
-					printf("I64 CONST\n");
+				{
+	#ifdef WAKOKO_PRINT
+						printf("I64 CONST\n");
+	#endif
 					bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position);
+				}
 				break;
 				case F32_CONST:
-					printf("F32 CONST\n");
+				{
+	#ifdef WAKOKO_PRINT
+						printf("F32 CONST\n");
+	#endif
 					bypass_fencoding(32, body.code_chunk, &j, CODE_BUFFER, &position);
+				}
 				break;
 				case F64_CONST:
-					printf("F64 CONST\n");
+				{
+	#ifdef WAKOKO_PRINT
+						printf("F64 CONST\n");
+	#endif
 					bypass_fencoding(64, body.code_chunk, &j, CODE_BUFFER, &position);
+				}
 				break;
 				// Operations
 				case I32_EQUAL_Z :
@@ -376,14 +421,26 @@ void make_coverage_instrumentation(WASMModule* module){
 				case REINTERPRET_I64_F64:
 				case REINTERPRET_F32_I32:
 				case REINTERPRET_F64_I64:
-					printf("0x%02x\n", OPCODE & 0xff);
+				{
+	#ifdef WAKOKO_PRINT
+						printf("0x%02x\n", OPCODE & 0xff);
+	#endif
+				}
 					break;
 				// MEMORY
 				case  CURRENT_MEMORY:
-					printf("CURRENT MEMORY", OPCODE & 0xff);
+				{
+	#ifdef WAKOKO_PRINT
+						printf("CURRENT MEMORY", OPCODE & 0xff);
+	#endif
+				}
 				break;
 				case  GROW_MEMORY:
-					printf("GROW MEMORY", OPCODE & 0xff);
+				{
+	#ifdef WAKOKO_PRINT
+						printf("GROW MEMORY", OPCODE & 0xff);
+	#endif
+				}
 				break;
 				case I32_STORE8:
 				case I32_STORE16:
@@ -394,9 +451,13 @@ void make_coverage_instrumentation(WASMModule* module){
 				case I64_STORE32:
 				case I64_STORE8:
 				case I64_STORE:
-					printf("MEMORY STORE\n");
+				{
+	#ifdef WAKOKO_PRINT
+						printf("MEMORY STORE\n");
+	#endif
 					bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position); // address
 					bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position); // offset
+				}
 				break;
 				case F32_MEMORY_LOAD:
 				case F64_MEMORY_LOAD:
@@ -412,81 +473,120 @@ void make_coverage_instrumentation(WASMModule* module){
 				case I64_U16_MEMORY_LOAD:
 				case I64_U32_MEMORY_LOAD:
 				case I64_U8_MEMORY_LOAD:
-					printf("MEMORY LOAD\n");
+				{
+	#ifdef WAKOKO_PRINT
+						printf("MEMORY LOAD\n");
+	#endif
 					bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position); // address
 					bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position); // offset
+				}
 				break;
 				case UNREACHABLE:
-					printf("UNRECHEABLE\n");
+				{
+	#ifdef WAKOKO_PRINT
+						printf("UNRECHEABLE\n");
+	#endif
+				}
 					break;
 				case NOP:
-					printf("NOP\n");
+				{
+	#ifdef WAKOKO_PRINT
+						printf("NOP\n");
+	#endif
+				}
 					break;
 				case IF:
-					printf("Entering IF \n");							
+				{
+	#ifdef WAKOKO_PRINT
+						printf("Entering IF \n");
+	#endif							
 					bypass_blocktype(CODE_BUFFER, body.code_chunk, &position, &j);
 					inject = 1;
-					break;
+				}
+				break;
 					
 				case ELSE:
 					{
+	#ifdef WAKOKO_PRINT
 						printf("Entering IF else\n");
+	#endif
 						inject = 1;
 					}
 					break;
 
 				case BR:
 					{
-						printf("BR \n");
+	#ifdef WAKOKO_PRINT
+							printf("BR \n");
+	#endif
 						bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position); // LBLIDX
 					}
 					break;
 
 				case BR_IF:
 					{
-						printf("BR IF\n", position);
+	#ifdef WAKOKO_PRINT
+							printf("BR IF\n", position);
+	#endif
 						bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position); // LBLIDX
 						inject = 1;
 					}
 					break;
 				case LOOP:
 					{
-						printf("Entering loop %d\n", position);
+	#ifdef WAKOKO_PRINT
+							printf("Entering loop %d\n", position);
+	#endif
 						bypass_blocktype(CODE_BUFFER, body.code_chunk, &position, &j);
 						inject = 1;
 					}
 					break;
 				case BLOCK:
 					{
-						printf("Entering block %d\n", position);
+	#ifdef WAKOKO_PRINT
+							printf("Entering block %d\n", position);
+	#endif
 						bypass_blocktype(CODE_BUFFER, body.code_chunk, &position, &j);
 						inject = 1;
 					}
 					break;
 				case RETURN:
 					{
-						printf("RETURN\n");
+	#ifdef WAKOKO_PRINT
+							printf("RETURN\n");
+	#endif
 					}
 					break;
 				case DROP:
 					{
-						printf("DROP\n");
+	#ifdef WAKOKO_PRINT
+							printf("DROP\n");
+	#endif
 					}
 					break;
 				case SELECT:
 					{
-						printf("SELECT\n");
+	#ifdef WAKOKO_PRINT
+							printf("SELECT\n");
+	#endif
 					}
 					break;
 				case BR_TABLE:
 					{
-						printf("BR_TABLE\n\t");
+	#ifdef WAKOKO_PRINT
+							printf("BR_TABLE\n\t");
+	#endif
 						int size = bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position); // LBLIDX
 
 						for(int i = 0; i < size; i++){
-							printf("%d ",  bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position));
+							int val =bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position);
+	#ifdef WAKOKO_PRINT
+								printf("%d ",  val);
+	#endif
 						}
-						printf("\n");
+	#ifdef WAKOKO_PRINT
+							printf("\n");
+	#endif
 						bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position); // LBLIDX
 
 					}
@@ -494,7 +594,9 @@ void make_coverage_instrumentation(WASMModule* module){
 				case CALL:
 				case CALL_INDIRECT:
 					{
-						printf("CALL 0x%02x\n", OPCODE);						
+	#ifdef WAKOKO_PRINT
+							printf("CALL 0x%02x\n", OPCODE);
+	#endif						
 						bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position); // fidxIDX
 						if(OPCODE == CALL_INDIRECT){
 							CODE_BUFFER[position++] = 0x00;
@@ -504,7 +606,9 @@ void make_coverage_instrumentation(WASMModule* module){
 					break;
 				case OPCODE_END:
 					{
-						printf("End %d\n", position);
+	#ifdef WAKOKO_PRINT
+							printf("End %d\n", position);
+	#endif
 
 						if(j != body.code_size)
 							inject = 1; 
@@ -513,7 +617,7 @@ void make_coverage_instrumentation(WASMModule* module){
 				
 				default:
 					CODE_BUFFER[position++] = OPCODE;
-					printf("UNKNOWN %02x\n", OPCODE & 0xff);
+					printf("UNKNOWN OPCODE %02x\n", OPCODE & 0xff);
 					exit(1);
 					break;
 			}
@@ -528,12 +632,16 @@ void make_coverage_instrumentation(WASMModule* module){
 		body.code_size = position;
 
 		set_element(&module->codeSection->functions, i, &body);
-		memset(CODE_BUFFER, 0, NEW_CODE_BUFFER_SIZE);
+		//memset(CODE_BUFFER, 0, NEW_CODE_BUFFER_SIZE);
 	}
 	module->codeSection->size = recalculate_code_section_size(module->codeSection);
-	printf("Probes inserted %d\n", globals);
+	#ifdef WAKOKO_PRINT
+		printf("Probes inserted %d\n", globals);
+	#endif
 
-	printf("CODE BUFFER SIZE %d\n", NEW_CODE_BUFFER_SIZE);
+	#ifdef WAKOKO_PRINT
+		printf("CODE BUFFER SIZE %d\n", NEW_CODE_BUFFER_SIZE);
+	#endif
 	GlobalSection * section = module->globalSection;
 	int count = 0;
 
@@ -574,7 +682,9 @@ void make_coverage_instrumentation(WASMModule* module){
 
 	section->size = recalculate_global_section_size(section);
 
-	printf("Extra globals added\n");
+	#ifdef WAKOKO_PRINT
+		printf("Extra globals added\n");
+	#endif
 
 
 	ExportSection * exportSection = module->exportSection;
@@ -593,5 +703,5 @@ void make_coverage_instrumentation(WASMModule* module){
 
 	exportSection->count += globals;
 	exportSection->size = recalculate_exports_section_size(exportSection);
-	printf("Instrumentation done\n");
+	printf("Instrumentation done, %d  probes inserted\n", globals);
 }

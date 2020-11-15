@@ -163,7 +163,7 @@ void encode_code_section(CodeSection* section, char* out, WASMModule* module, in
 
 
 	encode_var_uint_leb128(
-		recalculate_code_section_size(section), 
+		section->size, 
 		0, 
 		out + *position, 
 		position);
@@ -196,12 +196,9 @@ void encode_code_section(CodeSection* section, char* out, WASMModule* module, in
 void encode_element_section(ElementSection* section, char* out, WASMModule* module, int* position){
 	encode_var_uint_leb128(section->size, 0, out + *position, position);
 
-	printf("Element section\n");
-
 	// Section payload
 	encode_var_uint_leb128(/*section type*/section->count, 0, out + *position, position);
 
-	printf("Element section size %d\n", section->count);
 	ElementEntry s;
 	for(int i = 0; i < section->count; i++){
 		get_element(&section->elements, i, &s);

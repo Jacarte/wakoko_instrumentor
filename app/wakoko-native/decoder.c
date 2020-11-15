@@ -1,8 +1,10 @@
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <include/utils/utils.h>
 #include <include/wasm-decoder/wasm-decoder.h>
-#include <include/wasm-decoder/wasm-encoder.h>
 #include <include/wasm-decoder/wakoko.h>
+#include <include/wasm-decoder/wasm-encoder.h>
 
 int main(int argc, char * argv[]){
 	if(argc > 1){

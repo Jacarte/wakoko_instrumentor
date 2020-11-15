@@ -45,10 +45,12 @@ static int allocation_index = 0;
 void* allocate_and_register(int sz){
 	if(allocation_index == MAX_ALLOCATIONS)
 	{
-		printf("Maximum number of allocations are reached!.");
+	#ifdef WAKOKO_PRINT
+			printf("Maximum number of allocations are reached!.");
+	#endif
 		exit(1);
 	}
-	allocations[allocation_index++] = (void*)calloc(1, sz);
+	allocations[allocation_index++] = (void*)malloc(sz);
 	return allocations[allocation_index - 1];
 }
 
@@ -70,7 +72,9 @@ void insert_array(Array *a, void * element) {
   // a->used is the number of used entries, because a->array[a->used++] updates a->used only *after* the array has been accessed.
   // Therefore a->used can go up to a->size 
   if (a->count == a->size) {
-	  printf("Increasing size %d\n", a->size);
+ #ifdef WAKOKO_PRINT
+		  printf("Increasing size %d\n", a->size);
+ #endif
     a->size *= 2;
     a->data = realloc(a->data, a->size*a->membersize);
   }

@@ -54,8 +54,9 @@ WASMModule* parse_wasm(char* bytes, unsigned int sz){
 	//printf("position %d %d\n", sz, module->position);
 	#endif
 	if(header != 0x6d736100){
+		printf("Invalid wasm header %04x\n", header);
+		exit(1);
 		#ifdef DEBUG
-		////printf("Invalid wasm header %04x\n", header);
 		#endif
 	}
 	
@@ -324,9 +325,6 @@ void parse_types_section(Section * section, WASMModule * module, int size){
 
 	section->instance = typeS;
 
-	#ifdef DEBUG
-	//printf("Types section count %d\n", count);
-	#endif
 }
 
 void parse_function_section(Section * section, WASMModule * module, int size){
@@ -633,9 +631,12 @@ Section* parse_section(WASMModule* module){
 	//section -> size = section_size;
 	section -> type = section_type;
 	section -> section_offset = module -> position;
-	#ifdef DEBUG
-	//printf("Section type %d\n", section->type);
-	#endif
+	
+
+	if(section->type > 11 || section->type < 0){
+		printf("Invalid section id %d\n", section->type);	
+		exit(1);
+	}
 	switch (section->type)
 	{
 		case 1: // Types section
