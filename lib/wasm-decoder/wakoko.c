@@ -50,17 +50,20 @@ int recalculate_exports_section_size(ExportSection* section){
 	
 	int total = 0;
 
+	int previous = section->size;
 	ExportEntry s;
 	for(int i = 0; i < section->count; i++){
 		get_element(&section->exports, i, &s);
+
 		total += s.field_len;
 		total += get_encoding_size(s.field_len, 0);
 		total += get_encoding_size(s.index, 0);
-		total += get_encoding_size(s.index, 0);
+		total += 1; // kind
 	}
 
 	int size = get_encoding_size(/*section type*/section->count, 0);
 
+	printf("NEW EXPORT SECTION SIZE %d %d\n", section->size, total +  size);
 	return total + size;
 }
 
@@ -151,6 +154,19 @@ int bypass_var_uint(char* original_buffer, int* original_offset, char* instrumen
 	return result;
 }
 
+void instrument(char* instrumented_out, int* instrumentation_index, int pad, int* globals){
+	
+	printf("INSTRUMENTING...\n");
+	instrumented_out[(*instrumentation_index)++] = GET_GLOBAL;
+	encode_var_uint_leb128((*globals) + pad, 0, instrumented_out + *instrumentation_index, instrumentation_index);
+	instrumented_out[(*instrumentation_index)++] = I32_CONST;
+	encode_var_uint_leb128(1, 0, instrumented_out + *instrumentation_index, instrumentation_index);
+	instrumented_out[(*instrumentation_index)++] = I32_ADD;
+	instrumented_out[(*instrumentation_index)++] = SET_GLOBAL;
+	encode_var_uint_leb128(pad + (*globals)++, 0, instrumented_out + *instrumentation_index, instrumentation_index);
+
+}
+
 void make_coverage_instrumentation(WASMModule* module){
 	// traverse code section injecting global callbacks
 	
@@ -160,7 +176,8 @@ void make_coverage_instrumentation(WASMModule* module){
 
 	char CODE_BUFFER[NEW_CODE_BUFFER_SIZE];
 	int globals = 0;
-	int pad = 50;
+	int pad = 50;	
+
 
 	for(int i = 0; i < module->codeSection->count; i++){
 		get_element(&module->codeSection->functions, i, &body);
@@ -168,20 +185,19 @@ void make_coverage_instrumentation(WASMModule* module){
 		int position = 0;
 
 		// FUNCTION START
-		// CODE_BUFFER[position++] = GET_GLOBAL;
-		// encode_var_uint_leb128(globals + pad, 0, CODE_BUFFER + position, &position);
-		// CODE_BUFFER[position++] = I32_CONST;
-		// encode_var_uint_leb128(1, 0, CODE_BUFFER + position, &position);
-		// CODE_BUFFER[position++] = I32_ADD;
-		// CODE_BUFFER[position++] = SET_GLOBAL;
-		// encode_var_uint_leb128(pad + globals++, 0, CODE_BUFFER + position, &position);
-
 		// dump function Body
+		instrument(CODE_BUFFER, &position, pad, &globals);
 
-		int indent = 0;
-		int open = 0;
+		int inject = 0;
 		for(int j = 0; j < body.code_size;){
 			char OPCODE = body.code_chunk[j++] & 0xff;
+
+			// INJECT CODE HERE
+			if(inject){
+				printf("INJECTING...%02x\n", OPCODE);
+				instrument(CODE_BUFFER, &position, pad, &globals);
+				inject = 0;
+			}
 			CODE_BUFFER[position++] = OPCODE;
 
 			switch (OPCODE)
@@ -397,13 +413,15 @@ void make_coverage_instrumentation(WASMModule* module){
 					printf("NOP\n");
 					break;
 				case IF:
-					printf("Entering IF \n");
+					printf("Entering IF \n");							
+					bypass_blocktype(CODE_BUFFER, body.code_chunk, &position, &j);
+					inject = 1;
 					break;
 					
 				case ELSE:
 					{
 						printf("Entering IF else\n");
-						bypass_blocktype(CODE_BUFFER, body.code_chunk, &position, &j);
+						inject = 1;
 					}
 					break;
 
@@ -418,18 +436,22 @@ void make_coverage_instrumentation(WASMModule* module){
 					{
 						printf("BR IF\n", position);
 						bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position); // LBLIDX
+						inject = 1;
 					}
 					break;
 				case LOOP:
 					{
 						printf("Entering loop %d\n", position);
 						bypass_blocktype(CODE_BUFFER, body.code_chunk, &position, &j);
+						inject = 1;
+
 					}
 					break;
 				case BLOCK:
 					{
 						printf("Entering block %d\n", position);
 						bypass_blocktype(CODE_BUFFER, body.code_chunk, &position, &j);
+						inject = 1;
 					}
 					break;
 				case RETURN:
@@ -473,12 +495,12 @@ void make_coverage_instrumentation(WASMModule* module){
 					break;
 				case OPCODE_END:
 					{
-						open--;
 						//print_indent(indent--);
 						printf("End %d\n", position);
 
-						if(j == body.code_size)
-							printf("Finish end %d\n", j);
+						if(j != body.code_size)
+							inject = 1; 
+
 						//CODE_BUFFER[position++] = GET_GLOBAL;
 						//encode_var_uint_leb128(globals + pad, 0, CODE_BUFFER + position, &position);
 						//CODE_BUFFER[position++] = I32_CONST;
@@ -496,19 +518,13 @@ void make_coverage_instrumentation(WASMModule* module){
 					break;
 			}
 
-			//if(open)
 		}
-		if(open > 0)
-		{
-			printf("ERROR?! %d\n", open);
-			//exit(1);
-		}
-		//if(i == 1)
-		//	exit(1);
-		//for(int ;k =0; k < position; k++){
-		///	printf("%02x ", CODE_BUFFER[k] & 0xff);
+		//for(int k =0; k < position; k++){
+		//	printf("%02x ", CODE_BUFFER[k] & 0xff);
 		//}
 		//printf("\n");
+		//if(i == 1)
+		//	exit(1);
 
 
     	body.code_chunk = (char*)allocate_and_register(position);
@@ -524,8 +540,9 @@ void make_coverage_instrumentation(WASMModule* module){
 		memset(CODE_BUFFER, 0, NEW_CODE_BUFFER_SIZE);
 	}
 	module->codeSection->size = recalculate_code_section_size(module->codeSection);
-	printf("Probes inserted\n");
+	printf("Probes inserted %d\n", globals);
 
+	printf("CODE BUFFER SIZE %d\n", NEW_CODE_BUFFER_SIZE);
 	GlobalSection * section = module->globalSection;
 	int count = 0;
 
