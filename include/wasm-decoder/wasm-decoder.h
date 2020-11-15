@@ -196,6 +196,10 @@ typedef struct{
 	Array sections;
 
 	// DIRECT ACCESS FOR LATER USAGE
+	char has_global_section;
+	char has_code_section;
+	char has_export_section;
+	
 	GlobalSection *  globalSection;  
 	CodeSection * codeSection;
 	ExportSection * exportSection;

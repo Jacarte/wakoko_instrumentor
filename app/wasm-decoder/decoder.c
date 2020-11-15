@@ -23,6 +23,7 @@ int main(int argc, char * argv[]){
 		WASMModule* module = parse_wasm(bytes, sz);	
 		printf("CORRECT DECODING %d\n", module->size);
 
+		printf("INSTUMENTING\n");
 		#ifndef DEBUG
 		make_coverage_instrumentation(module);
 		#endif
