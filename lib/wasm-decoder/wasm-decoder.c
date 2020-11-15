@@ -414,15 +414,13 @@ void parse_global_section(Section * section, WASMModule * module, int size){
 
 	for(int i =0; i < count; i++){
 		GlobalImport * global = (GlobalImport *) parse_global(module);
-		
-		for(int j = 0; j < global->code_size; j++)
-			printf("%02x ", global->init[j] & 0xff);
-		printf("\n");
 		insert_array(&global_section->globals, global);
 	}
 
 	section->instance = global_section;
 	module->globalSection = global_section;
+	module->has_global_section = 1;
+
 	#ifdef DEBUG
 	//printf("global section count %d\n", count);
 	#endif
@@ -446,6 +444,7 @@ void parse_export_section(Section * section, WASMModule * module, int size){
 
 	section->instance = export_section;
 	module->exportSection = export_section;
+	module->has_export_section = 1;
 	#ifdef DEBUG
 	//printf("export section count %d\n", count);
 	#endif
@@ -490,6 +489,7 @@ void parse_code_section(Section * section, WASMModule * module, int size){
 
 	section->instance = code_section;
 	module->codeSection = code_section;
+	module->has_code_section = 1;
 	#ifdef DEBUG
 	//printf("export section count %d\n", count);
 	#endif

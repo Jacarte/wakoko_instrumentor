@@ -19,7 +19,7 @@ check_all: program
 check_wakoko: program_instrument
 	$(CC) $(CCFLAGS)  $(LINK) decoder.o -o decoder.out
 
-	#./decoder.out $(RESOURCES)/wasms/Chinese_zodiac.orig.wasm 
+	#./decoder.out $(RESOURCES)/wasms/Bacon_cipher.orig.wasm 
 	#cp $(RESOURCES)/wasms/Chinese_zodiac.orig.wasm  orig.wasm
 	#wasm2wat orig.wasm -o t2.wat -v > logs.orig.txt
 	#wasm2wat test.wasm -o t.wat -v > logs.txt
