@@ -102,8 +102,6 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 	
 	FunctionBody body;
 
-	int cumul = 0;
-
 	char CODE_BUFFER[NEW_CODE_BUFFER_SIZE];
 	int globals = 0;
 	int pad = 50;	
