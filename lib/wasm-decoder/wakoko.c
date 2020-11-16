@@ -392,12 +392,12 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 				// MEMORY
 				case  CURRENT_MEMORY:
 				{
-					DEBUG("CURRENT MEMORY", OPCODE & 0xff);
+					DEBUG("CURRENT MEMORY\n", OPCODE & 0xff);
 				}
 				break;
 				case  GROW_MEMORY:
 				{
-						DEBUG("GROW MEMORY", OPCODE & 0xff);
+						DEBUG("GROW MEMORY\n", OPCODE & 0xff);
 				}
 				break;
 				case I32_STORE8:
@@ -603,6 +603,7 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 	
 	ExportSection * exportSection = module->exportSection;
 	
+	INFO("Starting exporting\n");
 
 	for(int i = 0; i < globals; i++){
 		ExportEntry * cvEntry = (ExportEntry*)allocate_and_register(sizeof(ExportEntry));
@@ -611,10 +612,13 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 		cvEntry->kind = 0x03;
 		cvEntry->field_str= create_id(i + pad, &cvEntry->field_len);
 
+		//DEBUG("Exported field name %s\n", cvEntry->field_str);
+
 
 		insert_array(&exportSection->exports, cvEntry);
 	}
 
+	DEBUG("Recalculating section size\n");
 	exportSection->count += globals;
 	exportSection->size = recalculate_exports_section_size(exportSection);
 
