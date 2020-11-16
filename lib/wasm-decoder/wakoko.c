@@ -1,71 +1,7 @@
 #include <include/wasm-decoder/wasm-decoder.h>
+#include <include/wasm-decoder/wasm-encoder.h>
 #include <include/wasm-decoder/wakoko.h>
 
-
-int recalculate_code_section_size(CodeSection* section){
-	
-	int total = 0;
-
-	FunctionBody s;
-	for(int i = 0; i < section->count; i++){
-		get_element(&section->functions, i, &s);
-		total += s.code_size;
-
-		LocalDef ld;
-		for(int j = 0; j < s.local_count; j++){
-			get_element(&s.locals, j, &ld);
-			total += get_encoding_size(ld.valtype, 0);; // ld -> valtype
-			total += get_encoding_size(ld.n, 0);
-		}
-
-		total += get_encoding_size(s.local_count, 0);
-		total += get_encoding_size(s.size, 0);
-	}
-
-	int size = get_encoding_size(/*section type*/section->count, 0);
-
-	return total + size;
-}
-
-
-int recalculate_global_section_size(GlobalSection* section){
-	
-	int total = 0;
-
-	GlobalImport s;
-	for(int i = 0; i < section->count; i++){
-		get_element(&section->globals, i, &s);
-		total += s.code_size;
-		total += get_encoding_size(s.content_type, 0);
-		total += get_encoding_size(s.is_mutable, 0);
-	}
-
-	int size = get_encoding_size(/*section type*/section->count, 0);
-
-	return total + size;
-}
-
-
-int recalculate_exports_section_size(ExportSection* section){
-	
-	int total = 0;
-
-	int previous = section->size;
-	ExportEntry s;
-	for(int i = 0; i < section->count; i++){
-		get_element(&section->exports, i, &s);
-
-		total += s.field_len;
-		total += get_encoding_size(s.field_len, 0);
-		total += get_encoding_size(s.index, 0);
-		total += 1; // kind
-	}
-
-	int size = get_encoding_size(/*section type*/section->count, 0);
-
-	DEBUG("NEW EXPORT SECTION SIZE %d %d\n", section->size, total +  size);
-	return total + size;
-}
 
 
 void bypass_sencoding(int size, char* current_code, int* current_index, char* instrumented_code, int* instrumented_index){
@@ -101,11 +37,11 @@ void bypass_blocktype(char* instrumented_out, char* current_code, int *instrumen
 	|| block_type == 0x7d 
 	|| block_type == 0x7c 
 	|| block_type == 0x7e){
-		DEBUG("Regular block type one byte 0x%02x\n", block_type);
+		DEBUG2("Regular block type one byte 0x%02x\n", block_type);
 		instrumented_out[(*instrumented_index)++] = block_type;
 		(*current_index)++;
 	}else{
-		DEBUG("Custom block type %02x\n", block_type);
+		DEBUG2("Custom block type %02x\n", block_type);
 		bypass_sencoding(32, current_code, current_index, instrumented_out, instrumented_index);
 		
 	}
@@ -204,31 +140,31 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 				// variable access
 				case GET_LOCAL:
 				{
-					DEBUG("GET LOCAL\n");
+					DEBUG2("GET LOCAL\n");
 					bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position);
 				}
 				break;
 				case GET_GLOBAL:
 				{
-					DEBUG("GET GLOBAL\n");
+					DEBUG2("GET GLOBAL\n");
 					bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position);
 				}
 				break;
 				case SET_GLOBAL:
 				{
 					int index = bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position);
-					DEBUG("SET GLOBAL %d\n", index);
+					DEBUG2("SET GLOBAL %d\n", index);
 				}
 				break;
 				case SET_LOCAL:		
 					{			
 						int index = bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position);
-						DEBUG("SET LOCAL %d\n", index);
+						DEBUG2("SET LOCAL %d\n", index);
 					}
 				break;
 				case TEE_LOCAL:
 				{
-					DEBUG("LOCAL TEE\n");
+					DEBUG2("LOCAL TEE\n");
 					bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position);
 				}
 				break;
@@ -236,25 +172,25 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 				// Constants
 				case I32_CONST:
 				{
-					DEBUG("I32 CONST\n");
+					DEBUG2("I32 CONST\n");
 					bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position);
 				}
 				break;
 				case I64_CONST:
 				{
-					DEBUG("I64 CONST\n");
+					DEBUG2("I64 CONST\n");
 					bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position);
 				}
 				break;
 				case F32_CONST:
 				{
-					DEBUG("F32 CONST\n");
+					DEBUG2("F32 CONST\n");
 					bypass_fencoding(32, body.code_chunk, &j, CODE_BUFFER, &position);
 				}
 				break;
 				case F64_CONST:
 				{
-					DEBUG("F64 CONST\n");
+					DEBUG2("F64 CONST\n");
 					bypass_fencoding(64, body.code_chunk, &j, CODE_BUFFER, &position);
 				}
 				break;
@@ -386,18 +322,18 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 				case REINTERPRET_F32_I32:
 				case REINTERPRET_F64_I64:
 				{
-					DEBUG("0x%02x\n", OPCODE & 0xff);
+					DEBUG2("0x%02x\n", OPCODE & 0xff);
 				}
 					break;
 				// MEMORY
 				case  CURRENT_MEMORY:
 				{
-					DEBUG("CURRENT MEMORY\n", OPCODE & 0xff);
+					DEBUG2("CURRENT MEMORY\n", OPCODE & 0xff);
 				}
 				break;
 				case  GROW_MEMORY:
 				{
-						DEBUG("GROW MEMORY\n", OPCODE & 0xff);
+					DEBUG2("GROW MEMORY\n", OPCODE & 0xff);
 				}
 				break;
 				case I32_STORE8:
@@ -410,7 +346,7 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 				case I64_STORE8:
 				case I64_STORE:
 				{
-					DEBUG("MEMORY STORE\n");
+					DEBUG2("MEMORY STORE\n");
 					bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position); // address
 					bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position); // offset
 				}
@@ -430,24 +366,24 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 				case I64_U32_MEMORY_LOAD:
 				case I64_U8_MEMORY_LOAD:
 				{
-					DEBUG("MEMORY LOAD\n");
+					DEBUG2("MEMORY LOAD\n");
 					bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position); // address
 					bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position); // offset
 				}
 				break;
 				case UNREACHABLE:
 				{
-					DEBUG("UNRECHEABLE\n");
+					DEBUG2("UNRECHEABLE\n");
 				}
 					break;
 				case NOP:
 				{
-					DEBUG("NOP\n");
+					DEBUG2("NOP\n");
 				}
 					break;
 				case IF:
 				{
-					DEBUG("Entering IF \n");
+					DEBUG2("Entering IF \n");
 					bypass_blocktype(CODE_BUFFER, body.code_chunk, &position, &j);
 					inject = 1;
 				}
@@ -455,64 +391,64 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 					
 				case ELSE:
 					{
-						DEBUG("Entering IF else\n");
+						DEBUG2("Entering IF else\n");
 						inject = 1;
 					}
 					break;
 
 				case BR:
 					{
-						DEBUG("BR \n");
+						DEBUG2("BR \n");
 						bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position); // LBLIDX
 					}
 					break;
 
 				case BR_IF:
 					{
-						DEBUG("BR IF\n", position);
+						DEBUG2("BR IF\n", position);
 						bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position); // LBLIDX
 						inject = 1;
 					}
 					break;
 				case LOOP:
 					{
-						DEBUG("Entering loop %d\n", position);
+						DEBUG2("Entering loop %d\n", position);
 						bypass_blocktype(CODE_BUFFER, body.code_chunk, &position, &j);
 						inject = 1;
 					}
 					break;
 				case BLOCK:
 					{
-						DEBUG("Entering block %d\n", position);
+						DEBUG2("Entering block %d\n", position);
 						bypass_blocktype(CODE_BUFFER, body.code_chunk, &position, &j);
 						inject = 1;
 					}
 					break;
 				case RETURN:
 					{
-						DEBUG("RETURN\n");
+						DEBUG2("RETURN\n");
 					}
 					break;
 				case DROP:
 					{
-						DEBUG("DROP\n");
+						DEBUG2("DROP\n");
 					}
 					break;
 				case SELECT:
 					{
-						DEBUG("SELECT\n");
+						DEBUG2("SELECT\n");
 					}
 					break;
 				case BR_TABLE:
 					{
-						DEBUG("BR_TABLE\n\t");
+						DEBUG2("BR_TABLE\n\t");
 						int size = bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position); // LBLIDX
 
 						for(int i = 0; i < size; i++){
 							int val =bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position);
-							DEBUG("%d ",  val);
+							DEBUG2("%d ",  val);
 						}
-						DEBUG("\n");
+						DEBUG2("\n");
 						bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position); // LBLIDX
 
 					}
@@ -520,7 +456,7 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 				case CALL:
 				case CALL_INDIRECT:
 					{
-						DEBUG("CALL 0x%02x\n", OPCODE);
+						DEBUG2("CALL 0x%02x\n", OPCODE);
 						bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position); // fidxIDX
 						if(OPCODE == CALL_INDIRECT){
 							CODE_BUFFER[position++] = 0x00;
@@ -530,7 +466,7 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 					break;
 				case OPCODE_END:
 					{
-						DEBUG("End %d\n", position);
+						DEBUG2("End %d\n", position);
 						if(j != body.code_size)
 							inject = 1; 
 					}
@@ -624,5 +560,6 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 
 	*global_pad = pad;
 	*global_count = globals;
+
 	INFO("Instrumentation done, %d  probes inserted\n", globals);
 }

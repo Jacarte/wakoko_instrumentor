@@ -10,15 +10,15 @@ do
 
 	name="$(basename -- $f)"
 	echo $name $f $m51
-	./decoder.out "$f"
+	./decoder.out "$f" "$name.wakoko.wasm"
     
 	if [ -f "test.wasm" ]; then
 
-		wasm2wat test.wasm -o t.wat -v > logs/"$name.logs.txt"
-		wasm-validate test.wasm
+		wasm2wat $name.wakoko.wasm -o t.wat -v > logs/"$name.logs.txt"
+		wasm-validate $name.wakoko.wasm
 
 		rm t.wat
-		rm test.wasm
+		rm $name.wakoko.wasm
 	else
 		echo "$f failed to parse" >> check.txt
 		break 1

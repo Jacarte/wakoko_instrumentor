@@ -37,7 +37,6 @@ typedef struct {
 
 typedef enum {
 	INFO,
-	DEBUG,
 	ERROR
 } LOGTYPE;
 
@@ -60,7 +59,6 @@ void LOG_INFO(char* msg);
 
 
 
-
 void _proxy_log(LOGTYPE log_type, const char *fmt, ...)
 	__attribute__((format (printf, 2, 3)));
 
@@ -70,6 +68,12 @@ void _proxy_log(LOGTYPE log_type, const char *fmt, ...)
 	#define DEBUG(fmt,...) _proxy_log(INFO, fmt, ##__VA_ARGS__) 
 #else
 	#define DEBUG(fmt,...)  
+#endif
+
+#ifdef WAKOKO_PRINT_OPCODE 
+	#define DEBUG2(fmt,...) _proxy_log(INFO, fmt, ##__VA_ARGS__) 
+#else
+	#define DEBUG2(fmt,...)  
 #endif
 
 #define INFO(fmt,...) _proxy_log(INFO, fmt, ##__VA_ARGS__) 

@@ -13,22 +13,24 @@ char* EMSCRIPTEN_KEEPALIVE instrument_wasm(char* byte_char, int size, int * inst
 	char bytes[size];
 	memcpy(bytes, byte_char, size);
 	WASMModule* module = parse_wasm(bytes, size);	
-	printf("CORRECT DECODING %d\n", module->size);
+	INFO("CORRECT DECODING %d\n", module->size);
 
 
-	#ifndef DEBUG
-	printf("INSTRUMENTING %d FUNCTIONS\n", module->codeSection->count);
+	INFO("INSTRUMENTING %d FUNCTIONS\n", module->codeSection->count);
 	make_coverage_instrumentation(module, global_pad, global_count);
-	#endif
 
-	char*  out = (char*)allocate_and_register(MAX_OUT_SIZE);
+	char*  out = malloc(MAX_OUT_SIZE);
 
 	int toWrite = encode_wasm(module, out);
-	printf("CORRECT ENCODING %d\n", toWrite);
+	INFO("CORRECT ENCODING %d\n", toWrite);
 
-	char* dst = malloc(toWrite);
+	//char* dst = malloc(toWrite);
 	(*instrumented_size) = toWrite;
-	memcpy(dst, out, toWrite);
+	//memcpy(dst, out, toWrite);
 
-	return dst;
+	// deallocate all arrays in module
+	//free_generic_arrays(module);
+	//free_all();
+
+	return out;
 }

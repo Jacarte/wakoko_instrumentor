@@ -10,13 +10,14 @@ do
 
 	name="$(basename -- $f)"
 	echo $name $f $m51
-	./decoder.out "$f"
+	./decoder.out "$f" $name.wakoko.wasm
     
-	if [ -f "test.wasm" ]; then
 
-		wasm2wat test.wasm -o t.wat -v > logs/"$name.logs.txt"
+	if [ -f $name.wakoko.wasm ]; then
 
-		m52=$(md5sum test.wasm | awk '{print $1}' )
+		wasm2wat $name.wakoko.wasm -o $name.wakoko.wat -v > logs/"$name.logs.txt"
+
+		m52=$(md5sum $name.wakoko.wasm | awk '{print $1}' )
 
 
 		if [ $m51 != $m52 ]; then
@@ -25,32 +26,35 @@ do
 
 			# getting wasm2wat output
 
-			wasm2wat $f -o t1.wat -v > t1.logs
-			wasm2wat test.wasm -o t2.wat -v  2> t.err.logs > t2.logs
+			wasm2wat $f -o $f.wat -v > $f.logs
+			wasm2wat $name.wakoko.wasm -o $name.wakoko.wat -v  2> $name.wakoko.err.logs > $name.wakoko.logs
 
-			wasm-validate test.wasm > validation.txt
+			wasm-validate $name.wakoko.wasm > validation.txt
 
-			DIFF=$(diff t1.logs t2.logs)
-			ERRORS=$(cat t.err.logs)
+			DIFF=$(diff $f.logs $name.wakoko.logs)
+			ERRORS=$(cat $name.wakoko.err.logs)
 			VALIDATION=$(cat validation.txt)
 			printf "\t\n\nERROR: $ERRORS\n" >> check.txt
 			printf "\t\n\VALIDATION: $VALIDATION\n" >> check.txt
 			printf "\t\n\n$DIFF\n" >> check.txt
 			
-			cp t1.wat logs/$name.orig.wat 
-			cp t2.wat logs/$name.wakoko.wat
+			cp $f.wat  logs/$name.orig.wat 
+			cp $name.wakoko.wat logs/$name.wakoko.wat
 
-			rm t1.wat t2.wat t1.logs t2.logs t.err.logs validation.txt
+			rm *.wat *.logs
+
+			exit 1
  
 		else
 			echo "SUCCESS $f" >> success.txt
 		fi
 
 
-		rm t.wat
-		rm test.wasm
+		rm $name.wakoko.wat
+		rm $name.wakoko.wasm
 	else
 		echo "$f failed to parse" >> check.txt
+		exit 1
 	fi
 
 done

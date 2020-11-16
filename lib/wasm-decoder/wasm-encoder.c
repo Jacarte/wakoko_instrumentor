@@ -1,5 +1,72 @@
 #include <include/wasm-decoder/wasm-decoder.h>
 
+
+int recalculate_code_section_size(CodeSection* section){
+	
+	int total = 0;
+
+	FunctionBody s;
+	for(int i = 0; i < section->count; i++){
+		get_element(&section->functions, i, &s);
+		total += s.code_size;
+
+		LocalDef ld;
+		for(int j = 0; j < s.local_count; j++){
+			get_element(&s.locals, j, &ld);
+			total += get_encoding_size(ld.valtype, 0);; // ld -> valtype
+			total += get_encoding_size(ld.n, 0);
+		}
+
+		total += get_encoding_size(s.local_count, 0);
+		total += get_encoding_size(s.size, 0);
+	}
+
+	int size = get_encoding_size(/*section type*/section->count, 0);
+
+	return total + size;
+}
+
+
+int recalculate_global_section_size(GlobalSection* section){
+	
+	int total = 0;
+
+	GlobalImport s;
+	for(int i = 0; i < section->count; i++){
+		get_element(&section->globals, i, &s);
+		total += s.code_size;
+		total += get_encoding_size(s.content_type, 0);
+		total += get_encoding_size(s.is_mutable, 0);
+	}
+
+	int size = get_encoding_size(/*section type*/section->count, 0);
+
+	return total + size;
+}
+
+
+int recalculate_exports_section_size(ExportSection* section){
+	
+	int total = 0;
+
+	int previous = section->size;
+	ExportEntry s;
+	for(int i = 0; i < section->count; i++){
+		get_element(&section->exports, i, &s);
+
+		total += s.field_len;
+		total += get_encoding_size(s.field_len, 0);
+		total += get_encoding_size(s.index, 0);
+		total += 1; // kind
+	}
+
+	int size = get_encoding_size(/*section type*/section->count, 0);
+
+	DEBUG("NEW EXPORT SECTION SIZE %d %d\n", section->size, total +  size);
+	return total + size;
+}
+
+
 void encode_section_header(Section * section, char* out, int* position){
 
 	encode_var_uint_leb128(section->type, 0, out + *position, position);
@@ -7,6 +74,7 @@ void encode_section_header(Section * section, char* out, int* position){
 
 void encode_types_section(TypeSection* typesSection, char* out, WASMModule* module, int* position){
 
+	DEBUG("Encoding types section %d\n", typesSection->count);
 
 	encode_var_uint_leb128(typesSection->size, 0, out + *position, position);
 	// Section payload
@@ -18,22 +86,36 @@ void encode_types_section(TypeSection* typesSection, char* out, WASMModule* modu
 		get_element(&typesSection->types, i, &s);
 
 		// write form
-		encode_var_uint_leb128(s.form, 0, out + *position, position);
-		// param_count
+
+		(out + *position)[0] = 0x60;
+		(*position)+=1;	
+
 		encode_var_uint_leb128(s.param_count, 0, out + *position, position);
 
+		DEBUG("%d: ", i);
 		// write param types
-		for(int j = 0; j < s.param_count; j++)
-			(out + *position)[j] = s.param_types[j];
-
+		memcpy((out + *position), s.param_types.data, s.param_count);
 		(*position)+=s.param_count;
+		char ctpe;
+		for(int j = 0; j < s.param_count; j++){
+			get_element(&s.param_types, j, &ctpe);
 
+			if(ctpe != 0x7f && ctpe != 0x7e && ctpe != 0x7d && ctpe != 0x7c){
+				ERROR("Invalid numberic type %02x\n", ctpe);
+				//exit(1);
+			}
+			DEBUG(" %02x ", ctpe);
+		}
+
+		DEBUG(" Params %d\n", s.param_count);
 		// return_count
 		encode_var_uint_leb128(s.ret_count, 0, out + *position, position);
 
 		// write return types
-		for(int j = 0; j < s.ret_count; j++)
-			(out + *position)[j] = s.return_types[j];
+		//for(int j = 0; j < s.ret_count; j++)
+		//	(out + *position)[j] = s.return_types[j];
+
+		memcpy((out + *position), s.return_types.data, s.ret_count);
 		(*position)+=s.ret_count;
 	}
 
@@ -386,12 +468,14 @@ int encode_wasm(WASMModule* module, char* out){
 		case 6:
 			{
 				GlobalSection * globalSection = (GlobalSection *) s.instance;
+				globalSection->size = recalculate_global_section_size(globalSection);
 				encode_global_section(globalSection, out, module, &position);
 			}
 			break;
 		case 7:
 			{
 				ExportSection * exportSection = (ExportSection *) s.instance;
+				exportSection->size = recalculate_exports_section_size(exportSection);
 				encode_export_section(exportSection, out, module, &position);
 
 			}
@@ -412,6 +496,7 @@ int encode_wasm(WASMModule* module, char* out){
 		case 10:
 			{
 				CodeSection * codeSection = (CodeSection *) s.instance;
+				codeSection->size = recalculate_code_section_size(codeSection);
 				encode_code_section(codeSection, out, module, &position);
 
 			}

@@ -49,23 +49,35 @@ void* allocate_and_register(int sz){
 		ERROR("Maximum number of allocations are reached!.");
 		exit(1);
 	}
-	allocations[allocation_index++] = (void*)malloc(sz);
-	return allocations[allocation_index - 1];
+	allocations[allocation_index] = (void*)malloc(sz);
+	return allocations[allocation_index++];
 }
 
+void register_ptr(void * ptr){
+	if(allocation_index == MAX_ALLOCATIONS)
+	{
+		ERROR("Maximum number of allocations are reached!.");
+		exit(1);
+	}
+	allocations[allocation_index++] = ptr;
+}
 
 void free_all(){
-	for(int i =0; i < allocation_index; i++)
+	INFO("FREEING %d\n", allocation_index);
+	for(int i =0; i < allocation_index; i++){
+		DEBUG("FREEING %d %lld\n", i, allocations[i]);
 		free(allocations[i]);
+	}
 }
 
 
 void init_array(Array *a, int initialSize, int membersize) {
-  a->data = (void *) allocate_and_register(initialSize*membersize);
+  a->data = (void *) malloc(initialSize*membersize);
   a->count = 0;
   a->size = initialSize;
   a->membersize = membersize;
 }
+
 
 void insert_array(Array *a, void * element) {
   // a->used is the number of used entries, because a->array[a->used++] updates a->used only *after* the array has been accessed.
@@ -114,9 +126,11 @@ void _proxy_log(LOGTYPE level, const char *fmt, ...) {
     vfprintf(log_file, fmt, arg);
     va_end(arg);
 
+	#ifndef __EMSCRIPTEN__
 	#ifdef DEBUG
 		fflush(log_file);
 		fsync(fileno(log_file));
+	#endif
 	#endif
 }
 
