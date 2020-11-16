@@ -3,3 +3,6 @@ check.txt
 success.txt
 *.wat
 logs.txt
+*.wakoko.wasm
+*.wasm
+*.wat

@@ -9,11 +9,10 @@
 typedef struct {
 	int size;
 	int form;
-	unsigned int param_count;
-	char* param_types;
-	
-	unsigned int ret_count;
-	char* return_types;
+	int param_count;
+	Array param_types;
+	int ret_count;
+	Array return_types;
 } FuncTypeSection;
 
 
@@ -211,5 +210,7 @@ typedef struct{
 Section* parse_section(WASMModule* module);
 
 WASMModule* parse_wasm(char* bytes, unsigned int size);
+
+void free_generic_arrays(WASMModule* module);
 
 #endif

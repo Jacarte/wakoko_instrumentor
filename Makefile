@@ -17,25 +17,26 @@ test_resources_dir := $(PWD)/test-resources
 #$(leb128test): $(libraries)
 
 FLAGS="-DWAKOKO_PRINT"
+PRODUCTION_FLAGS=""
 CCFLAGS="-Wall"
 
 .PHONY: all
 
 all:
-	for d in $(libraries) ; \
+	for d in $(libraries) $(instrumentor-browser) ; \
 	do                               \
 		INC=$(include_dirs) \
 		BUILD=$(build_dir) \
 		BIN=$(bin_dir) \
 		L=$(object_dir) \
-		FLAGS=$(FLAGS) \
+		FLAGS=$(PRODUCTION_FLAGS) \
 		RESOURCES=$(test_resources_dir) \
 		SRC_DIR=$(src_dir) \
 		$(MAKE) --directory=$$d;       \
 	done
 
 check: all
-	for d in $(instrumentor) ; \
+	for d in $(libraries) $(instrumentor) ; \
 	do                               \
 		INC=$(include_dirs) \
 		BUILD=$(build_dir) \

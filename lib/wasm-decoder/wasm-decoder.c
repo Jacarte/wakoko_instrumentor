@@ -15,6 +15,99 @@ void add_section(WASMModule* module, Section* section){
 
 }
 
+void free_generic_arrays(WASMModule* module){
+	Section s;
+	for(int i = 0; i < module->count; i++){
+		get_element(&module->sections, i, &s);
+		DEBUG("FREEING SECTION %d\n", s.type);
+		switch (s.type)
+		{
+			case 1: // types
+			{
+				TypeSection * typeS = (TypeSection *) s.instance;
+				free(typeS->types.data);
+			}
+			break;
+		case 2:
+			{
+				ImportSection * importS = (ImportSection *) s.instance;
+				free(importS->imports.data);
+			}
+			break;
+		case 3:
+			{
+				FunctionSection * funcSection = (FunctionSection *) s.instance;
+			}
+			break;
+		case 4:
+			{
+				TableSection * tableSection = (TableSection *) s.instance;
+				free(tableSection->tables.data);
+			}
+		break;
+		case 5:
+			{
+				MemorySection * memSection = (MemorySection *) s.instance;
+				free(memSection->memories.data);
+			}
+		break;
+		
+		case 6:
+			{
+				GlobalSection * globalSection = (GlobalSection *) s.instance;
+				free(globalSection->globals.data);
+			}
+			break;
+		case 7:
+			{
+				ExportSection * exportSection = (ExportSection *) s.instance;
+				free(exportSection->exports.data);
+			}
+		break;
+		case 8:
+			{
+				StartSection * startSection = (StartSection *) s.instance;
+			}
+		break;
+		case 9:
+			{
+				ElementSection * elemSection = (ElementSection *) s.instance;
+				free(elemSection->elements.data);
+			}
+			
+		break;
+		case 10:
+			{
+				CodeSection * codeSection = (CodeSection *) s.instance;
+				free(codeSection->functions.data);
+			}
+			
+		break;
+		
+		case 11:
+			{
+				DataSection * dataSection = (DataSection *) s.instance;
+				free(dataSection->segments.data);
+			}
+			
+		break;
+		
+		case 0:
+			{
+				CustomSection * customSection = (CustomSection *) s.instance;
+			}
+			
+		break;
+		
+		default:
+			ERROR("Undefined section type %d\n", s.type);
+			exit(1);
+			break;
+		}
+	}
+	free(module->sections.data);
+
+}
 
 char * parse_expression(WASMModule * module, int * size){
 
@@ -250,31 +343,45 @@ void parse_types_section(Section * section, WASMModule * module, int size){
 	
 	typeS->count = count;
 
-	init_array(&typeS->types, count, sizeof(FuncTypeSection));
+	init_array(&typeS->types, count + 1, sizeof(FuncTypeSection));
 
 
 	for(int i =0; i < count; i++){
 		FuncTypeSection* functpe = (FuncTypeSection*)allocate_and_register(sizeof(FuncTypeSection));
 		
-		int form = decode_var_int32(module->payload, &module->position, 7);
+		int form = readInt8(module->payload, &module->position);
+		INFO("Type form %02x\n", form);
 		functpe->form = form;
 		
 		int param_count = decode_var_uint32(module->payload, &module->position);
 		functpe->param_count = param_count;
 
-		functpe->param_types = (char*)allocate_and_register(sizeof(param_count));
+		init_array(&functpe->param_types, param_count, sizeof(char));
+
+		DEBUG("Type %d ", i);
 		for(int j = 0; j < param_count; j++){
 			char tpe = readInt8(module->payload, &module->position);
-			functpe->param_types[j] = tpe;
-		}
 
-		int return_count = readInt8(module->payload, &module->position);
+			if(tpe != 0x7f && tpe != 0x7e && tpe != 0x7d && tpe != 0x7c){
+				ERROR("Invalid numberic type %02x\n", tpe);
+				exit(1);
+			}
+			DEBUG(" %02x ", tpe);
+			insert_array(&functpe->param_types, &tpe);
+		}
+		
+		DEBUG(" count %d\n", param_count);
+
+		int return_count = decode_var_uint32(module->payload, &module->position);
 		functpe->ret_count = return_count;
-		functpe->return_types = (char*)allocate_and_register(sizeof(return_count));
+		init_array(&functpe->return_types, return_count, sizeof(char));
+
 		for(int j=0; j < return_count; j++){
 			char tpe = readInt8(module->payload, &module->position);
-			functpe->return_types[j] = tpe;
+			insert_array(&functpe->return_types, &tpe);
 		}
+
+		INFO("Type r count %d\n", return_count);
 
 		insert_array(&typeS->types, functpe);
 	}
