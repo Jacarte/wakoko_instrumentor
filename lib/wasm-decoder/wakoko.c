@@ -12,7 +12,7 @@ void bypass_sencoding(int size, char* current_code, int* current_index, char* in
 	//DEBUG("byte %02x %d %d\n", byte & 0x7f, size, mask);
 
 	if(size >= 7 || (byte & mask) == 0 || (byte & mask) == mask ){
-		if( byte & 0x80 != 0 ){
+		if( byte & 0x80 ){
 			bypass_sencoding(size - 7, current_code, current_index, instrumented_code, instrumented_index);
 		}
 	}
