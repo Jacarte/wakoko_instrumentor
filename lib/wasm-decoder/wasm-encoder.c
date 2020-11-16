@@ -118,9 +118,6 @@ void encode_global_section(GlobalSection* section, char* out, WASMModule* module
 		(*position)+=1;
 		
 		memcpy(out + *position, s.init, s.code_size);
-		//for(int j = 0; j < s.code_size; j++)
-			//printf("%02x ", s.init[j] & 0xff);
-		//printf("\n");
 		(*position) += s.code_size;
 	}
 
@@ -209,7 +206,6 @@ void encode_element_section(ElementSection* section, char* out, WASMModule* modu
 		(*position)+=s.code_size;
 
 		encode_var_uint_leb128(s.fcount, 0, out + *position, position);
-		//printf("\tElement entry %d\n", s.fcount);
 		for(int j = 0; j < s.fcount; j++){
 			int fidx = s.findexes[j];
 			encode_var_uint_leb128(fidx,0, out + *position, position);
@@ -334,24 +330,6 @@ void encode_import_section(ImportSection* typesSection, char* out, WASMModule* m
 				break;
 		}
 
-		// param_count
-		//encode_var_uint_leb128(s.param_count, 0, out + *position, position);
-
-/*
-		// write param types
-		for(int j = 0; j < s.param_count; j++)
-			(out + *position)[j] = s.param_types[j];
-
-		(*position)+=s.param_count;
-
-		// return_count
-		encode_var_uint_leb128(s.ret_count, 0, out + *position, position);
-
-		// write return types
-		for(int j = 0; j < s.ret_count; j++)
-			(out + *position)[j] = s.return_types[j];
-		(*position)+=s.ret_count;*/
-
 	}
 
 }
@@ -371,7 +349,7 @@ int encode_wasm(WASMModule* module, char* out){
 		
 		get_element(&module->sections, i, &s);
 		encode_section_header(&s, out, &position);
-		//printf("Encoding %d\n", s.type);
+		DEBUG("Encoding %d\n", s.type);
 		switch (s.type)
 		{
 		case 1: // types
@@ -428,7 +406,6 @@ int encode_wasm(WASMModule* module, char* out){
 			{
 				ElementSection * elemSection = (ElementSection *) s.instance;
 				encode_element_section(elemSection, out, module, &position);
-
 			}
 			
 		break;
@@ -458,7 +435,8 @@ int encode_wasm(WASMModule* module, char* out){
 		break;
 		
 		default:
-			printf("UNKNNOWN bad parsing\n");
+			ERROR("UNKNNOWN bad parsing\n");
+			exit(1);
 			break;
 		}
 

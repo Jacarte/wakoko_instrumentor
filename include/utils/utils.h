@@ -35,6 +35,12 @@ typedef struct {
   int size;
 } Array;
 
+typedef enum {
+	INFO,
+	DEBUG,
+	ERROR
+} LOGTYPE;
+
 void init_array(Array *a, int initialSize, int membersize);
 
 void insert_array(Array *a, void * element);
@@ -47,5 +53,26 @@ void free_array(Array *a);
 
 
 int get_encoding_size(unsigned int value, unsigned int padding);
+
+void LOG_ERROR(char* msg);
+
+void LOG_INFO(char* msg);
+
+
+
+
+void _proxy_log(LOGTYPE log_type, const char *fmt, ...)
+	__attribute__((format (printf, 2, 3)));
+
+#define LOG(level, fmt,...) _proxy_log(level, fmt, ##__VA_ARGS__)
+
+#ifdef WAKOKO_PRINT 
+	#define DEBUG(fmt,...) _proxy_log(INFO, fmt, ##__VA_ARGS__) 
+#else
+	#define DEBUG(fmt,...)  
+#endif
+
+#define INFO(fmt,...) _proxy_log(INFO, fmt, ##__VA_ARGS__) 
+#define ERROR(fmt,...) _proxy_log(ERROR, fmt, ##__VA_ARGS__)
 
 #endif
