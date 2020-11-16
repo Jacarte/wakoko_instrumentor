@@ -13,3 +13,10 @@ generate_emcc: wakoko-client.c
 	 wakoko-client.c -o emcc/decoder.html  -s EXIT_RUNTIME=1 -s EXTRA_EXPORTED_RUNTIME_METHODS="['writeArrayToMemory', 'ccall']" -s ALLOW_MEMORY_GROWTH=1 -s TOTAL_MEMORY=600MB
 	wasm2wat emcc/decoder.wasm  --generate-names  -o emcc/decoder.wat
 	wc -c emcc/decoder.wasm
+
+	
+	sed -i -e "s/Module/WAKOKO_INSTRUMENTOR/g" emcc/decoder.js
+	sed -i -e "s/HEAP/WAKOKO_HEAP/g" emcc/decoder.js
+	cp emcc/decoder.js $(BUILD)
+	cp emcc/decoder.wasm $(BUILD)
+	cp emcc/decoder.wat $(BUILD)
