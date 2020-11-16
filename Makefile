@@ -35,7 +35,7 @@ all:
 	done
 
 check: all
-	for d in $(instrumentor) $(instrumentor-browser) ; \
+	for d in $(instrumentor) ; \
 	do                               \
 		INC=$(include_dirs) \
 		BUILD=$(build_dir) \

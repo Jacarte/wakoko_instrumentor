@@ -46,9 +46,7 @@ static int allocation_index = 0;
 void* allocate_and_register(int sz){
 	if(allocation_index == MAX_ALLOCATIONS)
 	{
-	#ifdef WAKOKO_PRINT
-			printf("Maximum number of allocations are reached!.");
-	#endif
+		ERROR("Maximum number of allocations are reached!.");
 		exit(1);
 	}
 	allocations[allocation_index++] = (void*)malloc(sz);
@@ -73,9 +71,7 @@ void insert_array(Array *a, void * element) {
   // a->used is the number of used entries, because a->array[a->used++] updates a->used only *after* the array has been accessed.
   // Therefore a->used can go up to a->size 
   if (a->count == a->size) {
- #ifdef WAKOKO_PRINT
-		  printf("Increasing size %d\n", a->size);
- #endif
+	DEBUG("Increasing size %d\n", a->size);
     a->size *= 2;
     a->data = realloc(a->data, a->size*a->membersize);
   }
@@ -101,6 +97,13 @@ void free_array(Array *a) {
   a->count = a->size = 0;
 }
 
+void* ERROR_AND_EXIT(const char* fmt){
+	ERROR(fmt, __LINE__, __FILE__);
+	exit(1);
+
+	return NULL;
+}
+
 
 void _proxy_log(LOGTYPE level, const char *fmt, ...) {
     
@@ -116,3 +119,4 @@ void _proxy_log(LOGTYPE level, const char *fmt, ...) {
 		fsync(fileno(log_file));
 	#endif
 }
+
