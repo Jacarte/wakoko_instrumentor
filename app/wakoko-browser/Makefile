@@ -5,7 +5,7 @@ LINK := $(addprefix  $(L)/,$(OBJS))
 
 generate_emcc: wakoko-client.c
 	mkdir -p emcc
-	emcc $(FLAGS) $(INC) $(SRC_DIR)/lib/wasm-decoder/wakoko.c \
+	emcc $(FLAGS) -DWAKOKO_PRINT $(INC) $(SRC_DIR)/lib/wasm-decoder/wakoko.c \
 	$(SRC_DIR)/lib/utils/utils.c \
 	$(SRC_DIR)/lib/utils/leb128.c \
 	$(SRC_DIR)/lib/wasm-decoder/wasm-decoder.c \

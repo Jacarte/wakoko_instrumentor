@@ -25,9 +25,11 @@ int main(int argc, char * argv[]){
 		WASMModule* module = parse_wasm(bytes, sz);	
 		printf("CORRECT DECODING %d\n", module->size);
 
-		printf("INSTUMENTING\n");
 		#ifndef DEBUG
-		make_coverage_instrumentation(module);
+		printf("INSTUMENTING\n");
+		int pad;
+		int globals;
+		make_coverage_instrumentation(module, &pad, &globals);
 		#endif
 
 		char*  out = (char*)allocate_and_register(MAX_OUT_SIZE);

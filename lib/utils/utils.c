@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <include/utils/utils.h>
+#include <stdarg.h>
 
 
 uint32 readUint32LE(char* buffer, int* offset){
@@ -98,4 +99,20 @@ void set_element(Array *a, unsigned int position, void * element) {
 void free_array(Array *a) {
   a->data = NULL;
   a->count = a->size = 0;
+}
+
+
+void _proxy_log(LOGTYPE level, const char *fmt, ...) {
+    
+	va_list arg;
+    FILE *log_file = (level == ERROR) ? stderr : stdout;
+	
+	va_start(arg, fmt);
+    vfprintf(log_file, fmt, arg);
+    va_end(arg);
+
+	#ifdef DEBUG
+		fflush(log_file);
+		fsync(fileno(log_file));
+	#endif
 }

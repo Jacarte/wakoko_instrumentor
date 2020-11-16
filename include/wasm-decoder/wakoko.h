@@ -5,6 +5,6 @@
 #define NEW_CODE_BUFFER_SIZE 1 << 21
 #define NEW_ID_BUFFER_SIZE 7
 
-void make_coverage_instrumentation(WASMModule* module);
+void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* global_count);
 
 #endif

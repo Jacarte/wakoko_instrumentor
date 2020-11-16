@@ -16,7 +16,7 @@ test_resources_dir := $(PWD)/test-resources
 
 #$(leb128test): $(libraries)
 
-FLAGS=""
+FLAGS="-DWAKOKO_PRINT"
 CCFLAGS="-Wall"
 
 .PHONY: all
@@ -35,7 +35,7 @@ all:
 	done
 
 check: all
-	for d in $(instrumentor-browser) ; \
+	for d in $(instrumentor) $(instrumentor-browser) ; \
 	do                               \
 		INC=$(include_dirs) \
 		BUILD=$(build_dir) \

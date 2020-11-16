@@ -120,7 +120,6 @@
 #define I32_OR (char)0x72
 #define I32_XOR (char)0x73
 #define I32_SHL (char)0x74
-#define I32_SHR (char)0x75
 #define I32_SHR_SIGNED (char)0x75
 #define I32_SHR (char)0x76
 #define I32_ROTL (char)0x77
