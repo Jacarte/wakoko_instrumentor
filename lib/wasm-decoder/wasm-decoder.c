@@ -350,7 +350,7 @@ void parse_types_section(Section * section, WASMModule * module, int size){
 		FuncTypeSection* functpe = (FuncTypeSection*)allocate_and_register(sizeof(FuncTypeSection));
 		
 		int form = readInt8(module->payload, &module->position);
-		INFO("Type form %02x\n", form);
+		DEBUG("Type form %02x\n", form);
 		functpe->form = form;
 		
 		int param_count = decode_var_uint32(module->payload, &module->position);
@@ -381,7 +381,7 @@ void parse_types_section(Section * section, WASMModule * module, int size){
 			insert_array(&functpe->return_types, &tpe);
 		}
 
-		INFO("Type r count %d\n", return_count);
+		DEBUG("Type r count %d\n", return_count);
 
 		insert_array(&typeS->types, functpe);
 	}
