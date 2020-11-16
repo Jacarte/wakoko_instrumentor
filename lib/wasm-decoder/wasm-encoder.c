@@ -49,7 +49,6 @@ int recalculate_exports_section_size(ExportSection* section){
 	
 	int total = 0;
 
-	int previous = section->size;
 	ExportEntry s;
 	for(int i = 0; i < section->count; i++){
 		get_element(&section->exports, i, &s);
