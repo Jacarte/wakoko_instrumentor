@@ -3,7 +3,7 @@ OBJS = utils.o leb128.o wasm-decoder.o wasm-encoder.o wakoko.o
 LINK := $(addprefix  $(L)/,$(OBJS))
 
 
-all:  check_wakoko 
+all:  check_wakoko check_all
 
 generate_emcc: decoder.c
 	mkdir -p emcc

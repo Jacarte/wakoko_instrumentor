@@ -14,8 +14,8 @@ do
     
 	if [ -f "test.wasm" ]; then
 
-		wasm2wat $name.wakoko.wasm -o t.wat -v > logs/"$name.logs.txt"
-		wasm-validate $name.wakoko.wasm
+		wasm2wat --enable-all $name.wakoko.wasm -o t.wat -v > logs/"$name.logs.txt"
+		wasm-validate --enable-all  $name.wakoko.wasm
 
 		rm t.wat
 		rm $name.wakoko.wasm

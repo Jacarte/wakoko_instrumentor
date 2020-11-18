@@ -7,3 +7,5 @@ logs.txt
 *.wat
 *.o
 *.out
+*.logs
+*.txt

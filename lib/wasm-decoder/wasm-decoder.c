@@ -741,7 +741,7 @@ Section* parse_section(WASMModule* module){
 	section -> type = section_type;
 	section -> section_offset = module -> position;
 	section -> size = section_size;
-	INFO("Section type %d size %d\n", section->type, section_size);
+	DEBUG("Section type %d size %d\n", section->type, section_size);
 
 	switch (section->type)
 	{

@@ -15,7 +15,7 @@ do
 
 	if [ -f $name.wakoko.wasm ]; then
 
-		wasm2wat $name.wakoko.wasm -o $name.wakoko.wat -v > logs/"$name.logs.txt"
+		wasm2wat --enable-all $name.wakoko.wasm -o $name.wakoko.wat -v > logs/"$name.logs.txt"
 
 		m52=$(md5sum $name.wakoko.wasm | awk '{print $1}' )
 
@@ -26,10 +26,10 @@ do
 
 			# getting wasm2wat output
 
-			wasm2wat $f -o $f.wat -v > $f.logs
-			wasm2wat $name.wakoko.wasm -o $name.wakoko.wat -v  2> $name.wakoko.err.logs > $name.wakoko.logs
+			wasm2wat --enable-all $f -o $f.wat -v > $f.logs
+			wasm2wat --enable-all $name.wakoko.wasm -o $name.wakoko.wat -v  2> $name.wakoko.err.logs > $name.wakoko.logs
 
-			wasm-validate $name.wakoko.wasm > validation.txt
+			wasm-validate --enable-all $name.wakoko.wasm > validation.txt
 
 			DIFF=$(diff $f.logs $name.wakoko.logs)
 			ERRORS=$(cat $name.wakoko.err.logs)
@@ -43,7 +43,7 @@ do
 
 			rm *.wat *.logs
 
-			exit 1
+			#exit 1
  
 		else
 			echo "SUCCESS $f" >> success.txt
