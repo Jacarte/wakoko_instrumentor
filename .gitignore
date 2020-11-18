@@ -2,3 +2,8 @@ build
 bin
 *.logs.txt
 .vscode/
+logs.txt
+*.wasm
+*.wat
+*.o
+*.out
