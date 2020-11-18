@@ -88,6 +88,10 @@ typedef struct {
 
 
 typedef struct {
+	int count;	
+} DataCountSection;
+
+typedef struct {
 	int size;
 	unsigned int count;
 	Array memories;	
@@ -157,6 +161,7 @@ typedef struct {
 typedef struct {
   unsigned int index;
   unsigned int size;
+  unsigned int flag;
   int code_size;
   char* init_chunk_code;
   char* data;

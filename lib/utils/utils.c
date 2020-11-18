@@ -40,34 +40,18 @@ char readInt8(char* buffer, int* offset){
 }
 
 
-static void* allocations [MAX_ALLOCATIONS];
 static int allocation_index = 0;
 
 void* allocate_and_register(int sz){
-	if(allocation_index == MAX_ALLOCATIONS)
-	{
-		ERROR("Maximum number of allocations are reached!.");
-		exit(1);
-	}
-	allocations[allocation_index] = (void*)malloc(sz);
-	return allocations[allocation_index++];
+	return (void*)malloc(sz);
 }
 
 void register_ptr(void * ptr){
-	if(allocation_index == MAX_ALLOCATIONS)
-	{
-		ERROR("Maximum number of allocations are reached!.");
-		exit(1);
-	}
-	allocations[allocation_index++] = ptr;
+	
 }
 
 void free_all(){
-	INFO("FREEING %d\n", allocation_index);
-	for(int i =0; i < allocation_index; i++){
-		DEBUG("FREEING %d %lld\n", i, allocations[i]);
-		free(allocations[i]);
-	}
+	
 }
 
 
@@ -108,15 +92,6 @@ void free_array(Array *a) {
   a->data = NULL;
   a->count = a->size = 0;
 }
-
-void* ERROR_AND_EXIT(const char* fmt){
-	ERROR(fmt, __LINE__, __FILE__);
-	exit(1);
-
-	return NULL;
-}
-
-
 void _proxy_log(LOGTYPE level, const char *fmt, ...) {
     
 	va_list arg;

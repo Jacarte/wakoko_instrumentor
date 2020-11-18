@@ -66,6 +66,7 @@ char* create_id(int id, int * size){
 }
 
 
+// TODO add one by size
 int bypass_var_uint(char* original_buffer, int* original_offset, char* instrumented_buffer, int* instrumented_offset){
 
 	unsigned shift = 0;
@@ -85,6 +86,14 @@ int bypass_var_uint(char* original_buffer, int* original_offset, char* instrumen
 	return result;
 }
 
+
+char bypass_byte(char* original_buffer, int* original_offset, char* instrumented_buffer, int* instrumented_offset){
+
+	char byte = original_buffer[(*original_offset)++];
+	instrumented_buffer[(*instrumented_offset)++] = byte;
+
+	return byte;
+}
 void instrument(char* instrumented_out, int* instrumentation_index, int pad, int* globals){
 	
 	instrumented_out[(*instrumentation_index)++] = GET_GLOBAL;
@@ -95,6 +104,17 @@ void instrument(char* instrumented_out, int* instrumentation_index, int pad, int
 	instrumented_out[(*instrumentation_index)++] = SET_GLOBAL;
 	encode_var_uint_leb128(pad + (*globals)++, 0, instrumented_out + *instrumentation_index, instrumentation_index);
 
+}
+
+void dump_function_body(char* code_body, int size){
+
+	DEBUG("\n");
+
+	for(int i =0; i < size ; i++){
+		DEBUG("0x%02x ", code_body[i] & 0xff);
+	}
+
+	DEBUG("\n");
 }
 
 void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* global_count){
@@ -138,6 +158,50 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 			switch (OPCODE)
 			{
 				// variable access
+				case MIX_OPERATION:
+				{
+					char type = bypass_byte(body.code_chunk, &j, CODE_BUFFER, &position);
+
+					if(type < 0x0 || type > 0x0e)
+					{
+						ERROR("Invalid float to int operation %02x\n", type);
+						exit(1);
+					}
+
+					DEBUG("MIX_OPERATION %02x %02x\n", OPCODE & 0xff, type);
+					switch (type)
+					{
+						case MEMORY_INIT:
+							bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position);
+ 							bypass_byte(body.code_chunk, &j, CODE_BUFFER, &position);
+							break;
+						case DATA_DROP:
+							bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position);
+						break;
+						case MEMORY_COPY:
+							bypass_byte(body.code_chunk, &j, CODE_BUFFER, &position);
+ 							bypass_byte(body.code_chunk, &j, CODE_BUFFER, &position);
+						break;
+						case MEMORY_FILL:
+							bypass_byte(body.code_chunk, &j, CODE_BUFFER, &position);
+						break;
+						case TABLE_INIT:
+							bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position);
+ 							bypass_byte(body.code_chunk, &j, CODE_BUFFER, &position);
+						break;
+						case ELEM_DROP:
+							bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position);
+						break;
+						case TABLE_COPY:
+							bypass_byte(body.code_chunk, &j, CODE_BUFFER, &position);
+ 							bypass_byte(body.code_chunk, &j, CODE_BUFFER, &position);
+							break;
+						default:
+						
+							break;
+					}
+					break;
+				}
 				case GET_LOCAL:
 				{
 					DEBUG2("GET LOCAL\n");
@@ -195,6 +259,11 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 				}
 				break;
 				// Operations
+				case TRY:
+				case CATCH:
+				case THROW:
+				case BrOnExn:
+				case RETHROW:
 				case I32_EQUAL_Z :
 				case I32_EQUAL :
 				case I32_NO_EQUAL :
@@ -301,7 +370,12 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 				case TRUNC_CONV_I32_F32:
 				case TRUNC_CONV_I32_F64_SIGNED:
 				case TRUNC_CONV_I32_F64:
+				case EXTEND_I32_8S:
 				case EXTEND_I32_I64_SIGNED:
+				case EXTEND_I64_32S:
+				case EXTEND_I32_16S:
+				case EXTEND_I64_8S:
+				case EXTEND_I64_16S:
 				case EXTEND_I32_I64:
 				case TRUNC_CONV_I64_F32_SIGNED:
 				case TRUNC_CONV_I64_F32:
@@ -349,6 +423,27 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 					DEBUG2("MEMORY STORE\n");
 					bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position); // address
 					bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position); // offset
+				}
+				break;
+				case ATOMIC_OPERATION:
+				{
+					DEBUG("ATOMIC %02x\n", OPCODE);
+					char CODE = bypass_byte(body.code_chunk, &j, CODE_BUFFER, &position);
+
+					switch (CODE)
+					{
+						case ATOMIC_FENCE:
+						{
+							char FENCE_CONST = bypass_byte(body.code_chunk, &j, CODE_BUFFER, &position);
+						}
+						break;
+						default:
+						{
+							char MEMARG_TYPE = bypass_byte(body.code_chunk, &j, CODE_BUFFER, &position);
+							bypass_var_uint(body.code_chunk, &j, CODE_BUFFER, &position); // offset
+						}
+						break;
+					}
 				}
 				break;
 				case F32_MEMORY_LOAD:
@@ -474,7 +569,8 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 				
 				default:
 					CODE_BUFFER[position++] = OPCODE;
-					ERROR("UNKNOWN OPCODE %02x\n", OPCODE & 0xff);
+					ERROR("UNKNOWN OPCODE %02x\n", OPCODE);
+					dump_function_body(body.code_chunk, body.code_size);
 					exit(1);
 					break;
 			}
@@ -494,8 +590,7 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 	module->codeSection->size = recalculate_code_section_size(module->codeSection);
 
 	INFO("Probes inserted %d\n", globals);
-	INFO("CODE BUFFER SIZE %d\n", NEW_CODE_BUFFER_SIZE);
-
+	
 	GlobalSection * section = module->globalSection;
 	int count = 0;
 
@@ -519,6 +614,8 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 	char CV_GLOBAL_INIT[] = {I32_CONST,
 			0,
 			OPCODE_END};
+	int previous_global_count = &section->globals.count;
+
 	for(int i = 0; i < globals; i++){
 		GlobalImport * g = (GlobalImport*)allocate_and_register(sizeof(GlobalImport));
 		g->content_type = 0x7f;
@@ -544,7 +641,7 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 	for(int i = 0; i < globals; i++){
 		ExportEntry * cvEntry = (ExportEntry*)allocate_and_register(sizeof(ExportEntry));
 		
-		cvEntry->index = i + pad;
+		cvEntry->index = i + pad + previous_global_count;
 		cvEntry->kind = 0x03;
 		cvEntry->field_str= create_id(i + pad, &cvEntry->field_len);
 

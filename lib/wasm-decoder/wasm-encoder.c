@@ -322,6 +322,13 @@ void encode_data_section(DataSection* section, char* out, WASMModule* module, in
 }
 
 
+void encode_data_count_section(DataCountSection* section, char* out, WASMModule* module, int* position){
+
+	encode_var_uint_leb128(section->count, 0, out + *position, position);
+	
+}
+
+
 void encode_function_section(FunctionSection* section, char* out, WASMModule* module, int* position){
 	encode_var_uint_leb128(section->size, 0, out + *position, position);
 	// Section payload
@@ -509,6 +516,11 @@ int encode_wasm(WASMModule* module, char* out){
 				encode_data_section(dataSection, out, module, &position);
 			}
 			
+		case 12:
+			{
+				DataCountSection * dataSection = (DataCountSection *) s.instance;
+				encode_data_count_section(dataSection, out, module, &position);
+			}
 		break;
 		
 		case 0:

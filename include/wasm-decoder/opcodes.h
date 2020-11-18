@@ -187,6 +187,27 @@
 #define TRUNC_CONV_I64_F32_SIGNED (char)0xae
 #define TRUNC_CONV_I64_F32 (char)0xaf
 
+// FLOAT TO INT PROPOSAL
+// https://github.com/WebAssembly/threads/blob/master/proposals/nontrapping-float-to-int-conversion/Overview.md
+// https://github.com/WebAssembly/bulk-memory-operations/blob/master/proposals/bulk-memory-operations/Overview.md
+#define MIX_OPERATION (char)0xfc
+// BULK MEMORY
+
+/*
+memory.copy	0xfc 0x0a	memory_dst:0x00 memory_src:0x00	copy from one region of linear memory to another region
+memory.fill	0xfc 0x0b	memory:0x00	fill a region of linear memory with a given byte value
+table.init	0xfc 0x0c	segment:varuint32, table:0x00	copy from a passive element segment to a table
+elem.drop	0xfc 0x0d	segment:varuint32	prevent further use of a passive element segment
+table.copy	0xfc 0x0e	table_dst:0x00 table_src:0x00	copy from one region of a table to another region
+*/
+#define MEMORY_INIT (char)0x08
+#define DATA_DROP (char)0x09
+#define MEMORY_COPY (char)0x0a
+#define MEMORY_FILL (char)0x0b
+#define TABLE_INIT (char)0x0c
+#define ELEM_DROP (char)0x0d
+#define TABLE_COPY (char)0x0e
+
 
 #define TRUNC_CONV_I64_F64_SIGNED (char)0xb0
 #define TRUNC_CONV_I64_F64 (char)0xb1
@@ -213,4 +234,25 @@
 #define DROP (char)0x1a
 #define SELECT (char)0x1b
 
+// USING V8 implementation as reference
+// https://github.com/WebAssembly/threads/blob/master/proposals/threads/Overview.md
+#define ATOMIC_OPERATION (char)0xfe
+#define ATOMIC_FENCE 0x03
+
+
+
+// 
+/* Sign-extension opcodes (--enable-sign-extension) */
+#define EXTEND_I32_8S (char)0xc0
+#define EXTEND_I32_16S (char)0xc1
+#define EXTEND_I64_8S (char)0xc2
+#define EXTEND_I64_16S (char)0xc3
+#define EXTEND_I64_32S (char)0xc4
+
+// TARY CATCH
+#define TRY (char)0x06
+#define CATCH (char)0x07
+#define THROW (char)0x08
+#define RETHROW (char)0x09
+#define BrOnExn (char)0x0a
 #endif

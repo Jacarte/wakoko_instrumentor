@@ -27,10 +27,10 @@ check_all: program
 check_wakoko: program_instrument
 	$(CC) $(CCFLAGS) -DWAKOKO_PRINT $(LINK) decoder.o -o decoder.out
 
-	./decoder.out $(RESOURCES)/wasms/sqlite.wasm sqlite.wasm
-	#cp $(RESOURCES)/wasms/opencv.wasm  orig.wasm
-	#wasm2wat orig.wasm -o t2.wat -v > logs.orig.txt
-	#wasm2wat test.wasm -o t.wat -v > logs.txt
+	./decoder.out $(RESOURCES)/huge_wasms/ffmpeg-core.wasm ffmpeg.wak.wasm
+	#cp $(RESOURCES)/huge_wasms/ffmpeg-core.wasm  orig.wasm
+	#wasm2wat --enable-all orig.wasm -o t2.wat -v > logs.orig.txt
+	#wasm2wat --enable-all ffmpeg.wak.wasm -o t.wat -v > logs.txt
 	#bash validate_wakoko.sh $(RESOURCES)/wasms
 
 

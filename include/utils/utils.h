@@ -13,7 +13,6 @@
 #define ANSI_COLOR_CYAN    "\x1b[36m"
 #define ANSI_COLOR_RESET   "\x1b[0m"
 
-#define MAX_ALLOCATIONS 1000000 // one million allocations
 
 typedef unsigned long  uint32;
 typedef unsigned int  uint16;
@@ -77,10 +76,9 @@ void _proxy_log(LOGTYPE log_type, const char *fmt, ...)
 #endif
 
 #define INFO(fmt,...) _proxy_log(INFO, fmt, ##__VA_ARGS__) 
-#define ERROR(fmt,...) _proxy_log(ERROR, fmt, ##__VA_ARGS__)
+#define ERROR(fmt,...) _proxy_log(ERROR, ANSI_COLOR_RED fmt ANSI_COLOR_RESET, ##__VA_ARGS__)
 
 
-void* ERROR_AND_EXIT(const char* fmt);
 
 
 #endif

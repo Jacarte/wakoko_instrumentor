@@ -91,7 +91,10 @@ void free_generic_arrays(WASMModule* module){
 			}
 			
 		break;
-		
+		case 12:
+			{
+
+			}
 		case 0:
 			{
 				CustomSection * customSection = (CustomSection *) s.instance;
@@ -127,9 +130,36 @@ char * parse_expression(WASMModule * module, int * size){
 			DEBUG("GLOBAL GET %02x \n", OPCODE);
 			decode_var_uint32(module->payload, &module->position); // global index
 			break;
-		
+		case F32_FLOOR:
+			DEBUG("F32_FLOOR %02x \n", OPCODE);
+			break;
+		case I32_XOR:
+			DEBUG("I32_XOR %02x \n", OPCODE);
+			break;
+		case F64_LESS_EQUAL_THAN:
+			DEBUG("F64_LESS_EQUAL_THAN %02x \n", OPCODE);
+			break;
+		case I32_OR:
+			DEBUG("I32_OR %02x \n", OPCODE);
+			break;
+		case I32_SHL:
+			DEBUG("I32_SHL %02x \n", OPCODE);
+			break;
+		case I32_POP_CNT:
+			DEBUG("I32_POP_CNT %02x \n", OPCODE);
+			break;
+		case I32_REM_SIGNED:
+			DEBUG("I32_REM_SIGNED %02x \n", OPCODE);
+			break;
+		case I32_DIV:
+			DEBUG("I32_DIV %02x \n", OPCODE);
+			break;
+		case GET_LOCAL:
+			DEBUG("GET_LOCAL %02x \n", OPCODE);
+			break;
+
 		default:
-			ERROR("UNKNOWN \n", OPCODE);
+			ERROR("UNKNOWN %02x \n", OPCODE & 0xff);
 			// TODO to be implemented on demand
 			exit(1);
 			break;
@@ -137,11 +167,9 @@ char * parse_expression(WASMModule * module, int * size){
 		OPCODE = readInt8(module->payload, &module->position);
 	}
 	int count = module->position - start;
-	DEBUG(" %d\n", count);
-	char* code_chunk = (char*)allocate_and_register(count);
-	memcpy(code_chunk, init, count);
+	DEBUG("%02x %d\n", OPCODE, count);
 	(*size) = count;
-	return code_chunk;
+	return init;
 }
 // Linearly parse WASM binary to construct tree structure
 WASMModule* parse_wasm(char* bytes, unsigned int sz){
@@ -168,6 +196,7 @@ WASMModule* parse_wasm(char* bytes, unsigned int sz){
 	uint16 version = readUint16LE(bytes, &module->position);
 	module->version = version;
 	
+	INFO("version %d\n", version);
 
 	while(module->size - module->position > 0){		
 		Section* section = parse_section(module);
@@ -188,6 +217,7 @@ FunctionImport* parse_function_import(WASMModule * module){
 }
 
 
+
 ElementEntry* parse_element_entry(WASMModule * module){
 
 	DEBUG("parsing element entry\n");
@@ -199,12 +229,20 @@ ElementEntry* parse_element_entry(WASMModule * module){
 	elem->init_code_chunk = parse_expression(module, &size);
 	elem->code_size = size;
 	DEBUG("Parsing element entry size %d\n", elem->code_size);
-
+	//module->position += size;
+	
 	elem->fcount = decode_var_uint32(module->payload, &module->position);
 	elem->findexes = (int*)allocate_and_register(sizeof(int)*elem->fcount);
 
-	for(int i = 0; i < elem->fcount; i++)
+	DEBUG("Element entry f count %d ", elem->fcount);
+	
+	for(int i = 0; i < elem->fcount; i++){
 		elem->findexes[i] = decode_var_uint32(module->payload, &module->position);
+	
+		DEBUG("%d ", elem->findexes[i]);
+	}
+
+	DEBUG("\n");
 
 	return elem;
 }
@@ -212,16 +250,24 @@ ElementEntry* parse_element_entry(WASMModule * module){
 
 DataSegment* parse_data_segment(WASMModule * module){
 
-	DEBUG("parsing data segment\n");
 	
 	DataSegment * elem = (DataSegment*) allocate_and_register(sizeof(DataSegment));
-	elem->index = decode_var_uint32(module->payload, &module->position);
+	elem->flag = decode_var_uint32(module->payload, &module->position);
+	DEBUG("parsing data index(%d) segment\n", elem->index);
 	
-	elem->init_chunk_code = parse_expression(module, &elem->code_size);
+
+	if(elem->index){ // this is the bulk memory feature
+		elem->index = decode_var_uint32(module->payload, &module->position);
+		DEBUG("bulk memory flag %d\n", elem->flag);
+	}
+
+	DEBUG("index %d\n", elem->index);
+	if(!(elem->flag)) // if it is not bulk memory then is has an offset
+		elem->init_chunk_code = parse_expression(module, &elem->code_size);
 
 	elem->size = decode_var_uint32(module->payload, &module->position);
-
 	char* data = (char*)allocate_and_register(elem->size);
+	DEBUG("size %d\n", elem->size);
 
 	memcpy(data, module->payload + module->position, elem->size);
 	module->position += elem->size;
@@ -243,7 +289,7 @@ FunctionBody* parse_function_body(WASMModule * module){
 	init_array(&elem->locals, elem->local_count, sizeof(LocalDef));
 
 
-	DEBUG("parsing function body %d %d\n", elem->local_count, elem->size);
+	//DEBUG("parsing function body %d %d\n", elem->local_count, elem->size);
 	
 	for(int i = 0; i < elem->local_count; i++){
 
@@ -265,7 +311,7 @@ FunctionBody* parse_function_body(WASMModule * module){
 	module->position = module->position + (elem->size - count);
 
 
-	DEBUG("Function body count %d size %d\n", count, elem->size);
+	//DEBUG("Function body count %d size %d\n", count, elem->size);
 	
 	return elem;
 }
@@ -390,6 +436,15 @@ void parse_types_section(Section * section, WASMModule * module, int size){
 
 }
 
+
+void parse_data_count_section(Section * section, WASMModule * module, int size){
+	DataCountSection * data_count_section = (DataCountSection *) allocate_and_register(sizeof(DataCountSection));
+	int count = decode_var_uint32(module->payload, &module->position);
+	data_count_section->count = count;
+
+	section->instance = data_count_section;
+}
+
 void parse_function_section(Section * section, WASMModule * module, int size){
 	FunctionSection * function_section = (FunctionSection*)allocate_and_register(sizeof(FunctionSection));
 	function_section->size = size;
@@ -501,6 +556,7 @@ void parse_elem_section(Section * section, WASMModule * module, int size){
 	int count = decode_var_uint32(module->payload, &module->position);
 	export_section->count = count;
 
+	DEBUG("element section count %d\n", count);
 	init_array(&export_section->elements, count, sizeof(ElementEntry));
 
 	for(int i =0; i < count; i++){
@@ -534,7 +590,7 @@ void parse_code_section(Section * section, WASMModule * module, int size){
 void parse_data_section(Section * section, WASMModule * module, int size){
 	DataSection * data_section = (DataSection *) allocate_and_register(sizeof(DataSection));
 	data_section->size = size;
-	DEBUG("data section sizeß %d\n", size);
+	DEBUG("data section size %d\n", size);
 	int start_position = module->position;
 
 	int count = decode_var_uint32(module->payload, &module->position);
@@ -548,7 +604,7 @@ void parse_data_section(Section * section, WASMModule * module, int size){
 		insert_array(&data_section->segments, segment);
 	}
 
-	DEBUG("data section position %d %d\n", start_position, module->position);
+	DEBUG("data section position %d %d (%d)\n", start_position, module->position, module->position - start_position);
 	section->instance = data_section;
 
 }
@@ -670,10 +726,6 @@ Section* parse_section(WASMModule* module){
 	
 	DEBUG("Section type %d\n", section->type);
 
-	if(section->type > 11 || section->type < 0){
-		ERROR("Invalid section id %d\n", section->type);	
-		exit(1);
-	}
 	switch (section->type)
 	{
 		case 1: // Types section
@@ -708,6 +760,9 @@ Section* parse_section(WASMModule* module){
 			break;
 		case 11: // Data section
 			parse_data_section(section, module, section_size);
+			break;
+		case 12:
+			parse_data_count_section(section, module, section_size);
 			break;
 		case 0: // Custom
 		//exit(1);
