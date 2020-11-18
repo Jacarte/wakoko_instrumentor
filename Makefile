@@ -16,7 +16,7 @@ test_resources_dir := $(PWD)/test-resources
 
 #$(leb128test): $(libraries)
 
-FLAGS="-DIDEM"
+FLAGS=""
 PRODUCTION_FLAGS=""
 CCFLAGS="-Wall"
 

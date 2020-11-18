@@ -128,6 +128,12 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 	int globals = 0;
 	int pad = 50;	
 
+	GlobalSection * global_section = module->globalSection;
+
+	int previous_global_count = global_section->globals.count;
+
+	if(pad <= previous_global_count)
+		pad = previous_global_count + 1;
 
 	if(module->codeSection == NULL){
 		// NOTHING to instrument
@@ -135,13 +141,14 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 		return;
 	}
 	INFO("INSTRUMENTING %d \n", module->codeSection->count);
+	int injected = 0;
 	for(int i = 0; i < module->codeSection->count; i++){
 		get_element(&module->codeSection->functions, i, &body);
 		int position = 0;
 
 		// FUNCTION START
 		// dump function Body
-		instrument(CODE_BUFFER, &position, pad, &globals);
+		//instrument(CODE_BUFFER, &position, pad, &globals);
 
 		int inject = 0;
 		for(int j = 0; j < body.code_size;){
@@ -579,7 +586,7 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 
     	body.code_chunk = (char*)allocate_and_register(position);
 		memcpy(body.code_chunk, CODE_BUFFER, position);
-
+		
 
 		body.size = body.size + (position - body.code_size);
 		body.code_size = position;
@@ -591,14 +598,13 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 
 	INFO("Probes inserted %d\n", globals);
 	
-	GlobalSection * section = module->globalSection;
 	int count = 0;
 
 	char PADD_GLOBAL_INIT[] = {I32_CONST,
 			0,
 			OPCODE_END};
 
-	for(int i = module->globalSection->count; i < pad + module->globalSection->count; i++){
+	for(int i = 0; i < pad - previous_global_count; i++){
 		GlobalImport * g = (GlobalImport*)allocate_and_register(sizeof(GlobalImport));
 		g->content_type = 0x7f;
 		g->is_mutable = 0x1;
@@ -607,14 +613,13 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 		g->code_size = 3;
 		g->init = PADD_GLOBAL_INIT;
 		count++;
-		insert_array(&section->globals, g);
+		insert_array(&global_section->globals, g);
 	}
 
 
 	char CV_GLOBAL_INIT[] = {I32_CONST,
 			0,
 			OPCODE_END};
-	int previous_global_count = &section->globals.count;
 
 	for(int i = 0; i < globals; i++){
 		GlobalImport * g = (GlobalImport*)allocate_and_register(sizeof(GlobalImport));
@@ -625,17 +630,18 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 		g->code_size = 3;
 		g->init = CV_GLOBAL_INIT;
 		count++;
-		insert_array(&section->globals, g);
+		insert_array(&global_section->globals, g);
 	}
 
 
-	section->count += count;
+	global_section->count += count;
+	
+	INFO("Extra globals added %d %d %d\n", global_section->count + count, pad, previous_global_count);
 
-	section->size = recalculate_global_section_size(section);
-	INFO("Extra globals added\n");
+	global_section->size = recalculate_global_section_size(global_section);
 	
 
-	/*
+	
 	ExportSection * exportSection = module->exportSection;
 	
 	INFO("Starting exporting\n");
@@ -643,7 +649,7 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 	for(int i = 0; i < globals; i++){
 		ExportEntry * cvEntry = (ExportEntry*)allocate_and_register(sizeof(ExportEntry));
 		
-		cvEntry->index = i + pad + previous_global_count;
+		cvEntry->index = i + pad;
 		cvEntry->kind = 0x03;
 		cvEntry->field_str= create_id(i + pad, &cvEntry->field_len);
 
@@ -656,7 +662,7 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 	DEBUG("Recalculating section size\n");
 	exportSection->count += globals;
 	exportSection->size = recalculate_exports_section_size(exportSection);
-*/
+
 	*global_pad = pad;
 	*global_count = globals;
 
