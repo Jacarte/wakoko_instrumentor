@@ -16,7 +16,7 @@ test_resources_dir := $(PWD)/test-resources
 
 #$(leb128test): $(libraries)
 
-FLAGS="-DWAKOKO_PRINT"
+FLAGS="-DIDEM"
 PRODUCTION_FLAGS=""
 CCFLAGS="-Wall"
 

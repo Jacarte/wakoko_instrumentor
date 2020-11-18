@@ -88,6 +88,7 @@ typedef struct {
 
 
 typedef struct {
+	int size;
 	int count;	
 } DataCountSection;
 
@@ -123,8 +124,11 @@ typedef struct {
 
 
 typedef struct {
+  unsigned int flag;
   unsigned int index;
   int code_size;
+  int elem_type;
+  char kind;
   char* init_code_chunk;
   unsigned int fcount;
   int * findexes;
@@ -157,7 +161,10 @@ typedef struct {
   Array functions;	
 } CodeSection;
 
-
+#define SEG_PASSIVE 1        // bit 0: Is passive
+#define	SEG_EXPLICIT_INDEX 2  // bit 1: Has explict index (Implies table 0 if absent)
+#define	SEG_DECLARAED  3       // Only used for declared segments
+#define SEG_USE_EXPRS  4
 typedef struct {
   unsigned int index;
   unsigned int size;
@@ -183,7 +190,7 @@ typedef struct {
 
 
 typedef struct {
-
+	unsigned int size;
 	unsigned int section_offset;
 	unsigned int type;
 	void* instance; // ImportSectionPtr, TypeSectionPtr

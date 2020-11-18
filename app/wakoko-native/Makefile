@@ -40,4 +40,4 @@ program: decoder.c
 
 
 program_instrument: decoder.c
-	$(CC) -c $(FLAGS)  -DWAKOKO_PRINT $(INC) decoder.c
+	$(CC) -c $(FLAGS) -DIDEM  -DWAKOKO_PRINT $(INC) decoder.c

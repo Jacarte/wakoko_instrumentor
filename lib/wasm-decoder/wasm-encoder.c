@@ -74,7 +74,7 @@ void encode_section_header(Section * section, char* out, int* position){
 
 void encode_types_section(TypeSection* typesSection, char* out, WASMModule* module, int* position){
 
-	DEBUG("Encoding types section %d\n", typesSection->count);
+	INFO("Encoding types section %d size %d\n", typesSection->count, typesSection->size);
 
 	encode_var_uint_leb128(typesSection->size, 0, out + *position, position);
 	// Section payload
@@ -123,6 +123,7 @@ void encode_types_section(TypeSection* typesSection, char* out, WASMModule* modu
 
 
 void encode_table_section(TableSection* typesSection, char* out, WASMModule* module, int* position){
+	INFO("Encoding table section %d size %d\n", typesSection->count, typesSection->size);
 
 	encode_var_uint_leb128(typesSection->size, 0, out + *position, position);
 
@@ -147,6 +148,7 @@ void encode_table_section(TableSection* typesSection, char* out, WASMModule* mod
 }
 
 void encode_custom_section(CustomSection* custom_section, char* out, WASMModule* module, int* position){
+	INFO("Encoding custom section size %d\n", custom_section->size);
 
 	encode_var_uint_leb128(custom_section->size, 0, out + *position, position);
 
@@ -183,6 +185,7 @@ void encode_memory_section(MemorySection* section, char* out, WASMModule* module
 
 
 void encode_global_section(GlobalSection* section, char* out, WASMModule* module, int* position){
+	INFO("Encoding global section %d size %d\n", section->count, section->size);
 
 	encode_var_uint_leb128(section->size, 0, out + *position, position);
 
@@ -207,6 +210,7 @@ void encode_global_section(GlobalSection* section, char* out, WASMModule* module
 
 
 void encode_export_section(ExportSection* section, char* out, WASMModule* module, int* position){
+	INFO("Encoding export section %d size %d\n", section->count, section->size);
 
 	encode_var_uint_leb128(section->size, 0, out + *position, position);
 
@@ -233,6 +237,8 @@ void encode_export_section(ExportSection* section, char* out, WASMModule* module
 
 void encode_start_section(StartSection* section, char* out, WASMModule* module, int* position){
 	// Section payload
+	INFO("Encoding start section %d size %d\n", section->index, section->size);
+
 	encode_var_uint_leb128(section->size, 0, out + *position, position);
 	encode_var_uint_leb128(/*section type*/section->index, 0, out + *position, position);
 }
@@ -240,6 +246,7 @@ void encode_start_section(StartSection* section, char* out, WASMModule* module, 
 
 void encode_code_section(CodeSection* section, char* out, WASMModule* module, int* position){
 
+	INFO("Encoding code section %d size %d\n", section->count, section->size);
 
 	encode_var_uint_leb128(
 		section->size, 
@@ -273,6 +280,8 @@ void encode_code_section(CodeSection* section, char* out, WASMModule* module, in
 
 
 void encode_element_section(ElementSection* section, char* out, WASMModule* module, int* position){
+	INFO("Encoding element section %d size %d\n", section->count, section->size);
+
 	encode_var_uint_leb128(section->size, 0, out + *position, position);
 
 	// Section payload
@@ -282,10 +291,29 @@ void encode_element_section(ElementSection* section, char* out, WASMModule* modu
 	for(int i = 0; i < section->count; i++){
 		get_element(&section->elements, i, &s);
 
-		encode_var_uint_leb128(s.index, 0, out + *position, position);
+		encode_var_uint_leb128(s.flag, 0, out + *position, position);
 
-		memcpy(out + *position, s.init_code_chunk, s.code_size);
-		(*position)+=s.code_size;
+		if ((s.flag & (SEG_PASSIVE | SEG_EXPLICIT_INDEX)) == SEG_EXPLICIT_INDEX) {
+			encode_var_uint_leb128(s.index, 0, out + *position, position);
+		}
+
+		if(!(s.flag & SEG_PASSIVE)){
+			memcpy(out + *position, s.init_code_chunk, s.code_size);
+			(*position)+=s.code_size;
+		}
+
+		if (s.flag & (SEG_PASSIVE | SEG_EXPLICIT_INDEX)) {
+			DEBUG("Parsing elem type %d\n", elem->flag); 
+			if (s.flag & SEG_USE_EXPRS) {
+				ERROR("NIT IMPLEMENTED\n");
+				exit(1);
+				// decode_var_int32(module->payload, &module->position, 32);
+			} else {
+				(out + *position)[0] = s.kind;
+				(*position)++;
+			}
+		}
+
 
 		encode_var_uint_leb128(s.fcount, 0, out + *position, position);
 		for(int j = 0; j < s.fcount; j++){
@@ -298,6 +326,7 @@ void encode_element_section(ElementSection* section, char* out, WASMModule* modu
 
 
 void encode_data_section(DataSection* section, char* out, WASMModule* module, int* position){
+	INFO("Encoding data section %d size %d\n", section->count, section->size);
 
 	encode_var_uint_leb128(section->size, 0, out + *position, position);
 	// Section payload
@@ -306,15 +335,25 @@ void encode_data_section(DataSection* section, char* out, WASMModule* module, in
 	DataSegment s;
 	for(int i = 0; i < section->count; i++){
 		get_element(&section->segments, i, &s);
+		DEBUG2("encoding data flag(%d) segment\n", s.flag);
 
-		// write module name
-		encode_var_uint_leb128(s.index, 0, out + *position, position);
+		encode_var_uint_leb128(s.flag, 0, out + *position, position);
 
-		memcpy(out + *position, s.init_chunk_code, s.code_size);
-		(*position)+=s.code_size;
+		if(s.flag & SEG_EXPLICIT_INDEX){
+			encode_var_uint_leb128(s.index, 0, out + *position, position);
+
+			DEBUG2("encoding data index(%d) segment\n", s.index);
+		}
+		if(!(s.flag & SEG_PASSIVE)){
+
+			DEBUG2("encoding data init size(%d) segment\n", s.code_size);
+			memcpy(out + *position, s.init_chunk_code, s.code_size);
+			(*position)+=s.code_size;
+		}
 
 		encode_var_uint_leb128(s.size, 0, out + *position, position);
 
+		DEBUG2("encoding data size(%d) segment\n", s.size);
 		memcpy(out + *position, s.data, s.size);
 		(*position)+=s.size;
 	}
@@ -323,13 +362,16 @@ void encode_data_section(DataSection* section, char* out, WASMModule* module, in
 
 
 void encode_data_count_section(DataCountSection* section, char* out, WASMModule* module, int* position){
+	INFO("Encoding data count section %d size %d\n", section->count, section->size);
 
+	encode_var_uint_leb128(section->size, 0, out + *position, position);
 	encode_var_uint_leb128(section->count, 0, out + *position, position);
-	
 }
 
 
 void encode_function_section(FunctionSection* section, char* out, WASMModule* module, int* position){
+	INFO("Encoding function count %d section size %d\n", section->count, section->size);
+
 	encode_var_uint_leb128(section->size, 0, out + *position, position);
 	// Section payload
 	encode_var_uint_leb128(/*section type*/section->count, 0, out + *position, position);
@@ -342,6 +384,7 @@ void encode_function_section(FunctionSection* section, char* out, WASMModule* mo
 }
 
 void encode_import_section(ImportSection* typesSection, char* out, WASMModule* module, int* position){
+	INFO("Encoding import count %d section size %d\n", typesSection->count, typesSection->size);
 
 	encode_var_uint_leb128(typesSection->size, 0, out + *position, position);
 	// Section payload
@@ -438,37 +481,83 @@ int encode_wasm(WASMModule* module, char* out){
 		
 		get_element(&module->sections, i, &s);
 		encode_section_header(&s, out, &position);
-		DEBUG("Encoding %d\n", s.type);
+		INFO("Encoding type %d size\n", s.type);
+
+		int previous = position;
 		switch (s.type)
 		{
+
+		case 0:
+			{
+				CustomSection * customSection = (CustomSection *) s.instance;
+				encode_custom_section(customSection, out, module, &position);
+				#ifdef IDEM
+				if(position - previous != customSection->size){
+					ERROR("INCORRENT ENCODING %d %d\n", position-previous, customSection->size);
+					exit(1);
+				}
+				#endif
+			}
+			
+		break;
 		case 1: // types
 			{
 				TypeSection * typeS = (TypeSection *) s.instance;
 				encode_types_section(typeS, out, module, &position);
+				#ifdef IDEM
+				if(position - previous - 2 != typeS->size){
+					ERROR("INCORRENT ENCODING %d %d\n", position-previous, typeS->size);
+					exit(1);
+				}
+				#endif
 			}
 			break;
 		case 2:
 			{
 				ImportSection * importS = (ImportSection *) s.instance;
 				encode_import_section(importS, out, module, &position);
+				#ifdef IDEM
+				if(position - previous - 2 != importS->size){
+					ERROR("INCORRENT ENCODING %d %d\n", position-previous, importS->size);
+					exit(1);
+				}
+				#endif
 			}
 			break;
 		case 3:
 			{
 				FunctionSection * funcSection = (FunctionSection *) s.instance;
 				encode_function_section(funcSection, out, module, &position);
+				#ifdef IDEM
+				if(position - previous - 3!= funcSection->size){
+					ERROR("INCORRENT ENCODING %d %d\n", position-previous, funcSection->size);
+					exit(1);
+				}
+				#endif
 			}
 			break;
 		case 4:
 			{
 				TableSection * tableSection = (TableSection *) s.instance;
 				encode_table_section(tableSection, out, module, &position);
+				#ifdef IDEM
+				if(position - previous - 1 != tableSection->size){
+					ERROR("INCORRENT ENCODING %d %d\n", position-previous, tableSection->size);
+					exit(1);
+				}
+				#endif
 			}
 		break;
 		case 5:
 			{
 				MemorySection * memSection = (MemorySection *) s.instance;
 				encode_memory_section(memSection, out, module, &position);
+				#ifdef IDEM
+				if(position - previous != memSection->size){
+					ERROR("INCORRENT ENCODING %d %d\n", position-previous, memSection->size);
+					exit(1);
+				}
+				#endif
 			}
 		break;
 		
@@ -477,6 +566,12 @@ int encode_wasm(WASMModule* module, char* out){
 				GlobalSection * globalSection = (GlobalSection *) s.instance;
 				globalSection->size = recalculate_global_section_size(globalSection);
 				encode_global_section(globalSection, out, module, &position);
+				#ifdef IDEM
+				if(position - previous - 1 != globalSection->size){
+					ERROR("INCORRENT ENCODING %d %d\n", position-previous, globalSection->size);
+					exit(1);
+				}
+				#endif
 			}
 			break;
 		case 7:
@@ -484,6 +579,12 @@ int encode_wasm(WASMModule* module, char* out){
 				ExportSection * exportSection = (ExportSection *) s.instance;
 				exportSection->size = recalculate_exports_section_size(exportSection);
 				encode_export_section(exportSection, out, module, &position);
+				#ifdef IDEM
+				if(position - previous - 2!= exportSection->size){
+					ERROR("INCORRENT ENCODING %d %d\n", position-previous, exportSection->size);
+					exit(1);
+				}
+				#endif
 
 			}
 		break;
@@ -491,12 +592,24 @@ int encode_wasm(WASMModule* module, char* out){
 			{
 				StartSection * startSection = (StartSection *) s.instance;
 				encode_start_section(startSection, out, module, &position);
+				#ifdef IDEM
+				if(position - previous - 1 != startSection->size){
+					ERROR("INCORRENT ENCODING %d %d\n", position-previous, startSection->size);
+					exit(1);
+				}
+				#endif
 			}
 		break;
 		case 9:
 			{
 				ElementSection * elemSection = (ElementSection *) s.instance;
 				encode_element_section(elemSection, out, module, &position);
+				#ifdef IDEM
+				if(position - previous -3 != elemSection->size){
+					ERROR("INCORRENT ENCODING %d %d\n", position-previous, elemSection->size);
+					exit(1);
+				}
+				#endif
 			}
 			
 		break;
@@ -505,6 +618,12 @@ int encode_wasm(WASMModule* module, char* out){
 				CodeSection * codeSection = (CodeSection *) s.instance;
 				codeSection->size = recalculate_code_section_size(codeSection);
 				encode_code_section(codeSection, out, module, &position);
+				#ifdef IDEM
+				if(position - previous - 4 != codeSection->size){
+					ERROR("INCORRENT ENCODING %d %d\n", position-previous, codeSection->size);
+					exit(1);
+				}
+				#endif
 
 			}
 			
@@ -514,22 +633,27 @@ int encode_wasm(WASMModule* module, char* out){
 			{
 				DataSection * dataSection = (DataSection *) s.instance;
 				encode_data_section(dataSection, out, module, &position);
+				#ifdef IDEM
+				if(position - previous - 4 != dataSection->size){
+					ERROR("INCORRENT ENCODING %d %d\n", position-previous, dataSection->size);
+					exit(1);
+				}
+				#endif
 			}
-			
+			break;
 		case 12:
 			{
-				DataCountSection * dataSection = (DataCountSection *) s.instance;
-				encode_data_count_section(dataSection, out, module, &position);
+				DataCountSection * dataCSection = (DataCountSection *) s.instance;
+				encode_data_count_section(dataCSection, out, module, &position);
+				#ifdef IDEM
+				if(position - previous - 1 != dataCSection->size){
+					ERROR("INCORRENT ENCODING %d %d\n", position-previous, dataCSection->size);
+					exit(1);
+				}
+				#endif
 			}
 		break;
 		
-		case 0:
-			{
-				CustomSection * customSection = (CustomSection *) s.instance;
-				encode_custom_section(customSection, out, module, &position);
-			}
-			
-		break;
 		
 		default:
 			ERROR("UNKNNOWN bad parsing\n");
@@ -538,6 +662,8 @@ int encode_wasm(WASMModule* module, char* out){
 		}
 
 	}
+
+	INFO("ENCODED COUNT %d\n", position);
 
 	return position;
 }

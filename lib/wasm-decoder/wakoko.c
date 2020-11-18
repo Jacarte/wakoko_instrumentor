@@ -634,6 +634,8 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 	section->size = recalculate_global_section_size(section);
 	INFO("Extra globals added\n");
 	
+
+	/*
 	ExportSection * exportSection = module->exportSection;
 	
 	INFO("Starting exporting\n");
@@ -641,11 +643,11 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 	for(int i = 0; i < globals; i++){
 		ExportEntry * cvEntry = (ExportEntry*)allocate_and_register(sizeof(ExportEntry));
 		
-		cvEntry->index = i + pad + previous_global_count;
+		cvEntry->index = i + pad + previous_global_count;
 		cvEntry->kind = 0x03;
 		cvEntry->field_str= create_id(i + pad, &cvEntry->field_len);
 
-		//DEBUG("Exported field name %s\n", cvEntry->field_str);
+		DEBUG("Exported field name %s\n", cvEntry->field_str);
 
 
 		insert_array(&exportSection->exports, cvEntry);
@@ -654,7 +656,7 @@ void make_coverage_instrumentation(WASMModule* module, int *global_pad, int* glo
 	DEBUG("Recalculating section size\n");
 	exportSection->count += globals;
 	exportSection->size = recalculate_exports_section_size(exportSection);
-
+*/
 	*global_pad = pad;
 	*global_count = globals;
 
