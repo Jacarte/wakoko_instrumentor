@@ -492,7 +492,7 @@ int encode_wasm(WASMModule* module, char* out){
 				CustomSection * customSection = (CustomSection *) s.instance;
 				encode_custom_section(customSection, out, module, &position);
 				#ifdef IDEM
-				if(position - previous != customSection->size){
+				if(position - previous - get_encoding_size(customSection->size, 0) != customSection->size){
 					ERROR("INCORRENT ENCODING %d %d\n", position-previous, customSection->size);
 					exit(1);
 				}
@@ -505,7 +505,7 @@ int encode_wasm(WASMModule* module, char* out){
 				TypeSection * typeS = (TypeSection *) s.instance;
 				encode_types_section(typeS, out, module, &position);
 				#ifdef IDEM
-				if(position - previous - 2 != typeS->size){
+				if(position - previous - get_encoding_size(typeS->size, 0) != typeS->size){
 					ERROR("INCORRENT ENCODING %d %d\n", position-previous, typeS->size);
 					exit(1);
 				}
@@ -517,7 +517,7 @@ int encode_wasm(WASMModule* module, char* out){
 				ImportSection * importS = (ImportSection *) s.instance;
 				encode_import_section(importS, out, module, &position);
 				#ifdef IDEM
-				if(position - previous - 2 != importS->size){
+				if(position - previous - get_encoding_size(importS->size, 0) != importS->size){
 					ERROR("INCORRENT ENCODING %d %d\n", position-previous, importS->size);
 					exit(1);
 				}
@@ -529,7 +529,7 @@ int encode_wasm(WASMModule* module, char* out){
 				FunctionSection * funcSection = (FunctionSection *) s.instance;
 				encode_function_section(funcSection, out, module, &position);
 				#ifdef IDEM
-				if(position - previous - 3!= funcSection->size){
+				if(position - previous - get_encoding_size(funcSection->size, 0) != funcSection->size){
 					ERROR("INCORRENT ENCODING %d %d\n", position-previous, funcSection->size);
 					exit(1);
 				}
@@ -541,7 +541,7 @@ int encode_wasm(WASMModule* module, char* out){
 				TableSection * tableSection = (TableSection *) s.instance;
 				encode_table_section(tableSection, out, module, &position);
 				#ifdef IDEM
-				if(position - previous - 1 != tableSection->size){
+				if(position - previous - get_encoding_size(tableSection->size, 0) != tableSection->size){
 					ERROR("INCORRENT ENCODING %d %d\n", position-previous, tableSection->size);
 					exit(1);
 				}
@@ -553,7 +553,7 @@ int encode_wasm(WASMModule* module, char* out){
 				MemorySection * memSection = (MemorySection *) s.instance;
 				encode_memory_section(memSection, out, module, &position);
 				#ifdef IDEM
-				if(position - previous != memSection->size){
+				if(position - previous - get_encoding_size(memSection->size, 0) != memSection->size){
 					ERROR("INCORRENT ENCODING %d %d\n", position-previous, memSection->size);
 					exit(1);
 				}
@@ -567,7 +567,7 @@ int encode_wasm(WASMModule* module, char* out){
 				globalSection->size = recalculate_global_section_size(globalSection);
 				encode_global_section(globalSection, out, module, &position);
 				#ifdef IDEM
-				if(position - previous - 1 != globalSection->size){
+				if(position - previous - get_encoding_size(globalSection->size, 0) != globalSection->size){
 					ERROR("INCORRENT ENCODING %d %d\n", position-previous, globalSection->size);
 					exit(1);
 				}
@@ -580,7 +580,7 @@ int encode_wasm(WASMModule* module, char* out){
 				exportSection->size = recalculate_exports_section_size(exportSection);
 				encode_export_section(exportSection, out, module, &position);
 				#ifdef IDEM
-				if(position - previous - 2!= exportSection->size){
+				if(position - previous - get_encoding_size(exportSection->size, 0)!= exportSection->size){
 					ERROR("INCORRENT ENCODING %d %d\n", position-previous, exportSection->size);
 					exit(1);
 				}
@@ -593,7 +593,7 @@ int encode_wasm(WASMModule* module, char* out){
 				StartSection * startSection = (StartSection *) s.instance;
 				encode_start_section(startSection, out, module, &position);
 				#ifdef IDEM
-				if(position - previous - 1 != startSection->size){
+				if(position - previous - get_encoding_size(startSection->size, 0) != startSection->size){
 					ERROR("INCORRENT ENCODING %d %d\n", position-previous, startSection->size);
 					exit(1);
 				}
@@ -605,7 +605,7 @@ int encode_wasm(WASMModule* module, char* out){
 				ElementSection * elemSection = (ElementSection *) s.instance;
 				encode_element_section(elemSection, out, module, &position);
 				#ifdef IDEM
-				if(position - previous -3 != elemSection->size){
+				if(position - previous - get_encoding_size(elemSection->size, 0)  != elemSection->size){
 					ERROR("INCORRENT ENCODING %d %d\n", position-previous, elemSection->size);
 					exit(1);
 				}
@@ -619,7 +619,7 @@ int encode_wasm(WASMModule* module, char* out){
 				codeSection->size = recalculate_code_section_size(codeSection);
 				encode_code_section(codeSection, out, module, &position);
 				#ifdef IDEM
-				if(position - previous - 4 != codeSection->size){
+				if(position - previous - get_encoding_size(codeSection->size, 0) != codeSection->size){
 					ERROR("INCORRENT ENCODING %d %d\n", position-previous, codeSection->size);
 					exit(1);
 				}
@@ -634,7 +634,7 @@ int encode_wasm(WASMModule* module, char* out){
 				DataSection * dataSection = (DataSection *) s.instance;
 				encode_data_section(dataSection, out, module, &position);
 				#ifdef IDEM
-				if(position - previous - 4 != dataSection->size){
+				if(position - previous - get_encoding_size(dataSection->size, 0) != dataSection->size){
 					ERROR("INCORRENT ENCODING %d %d\n", position-previous, dataSection->size);
 					exit(1);
 				}
@@ -646,7 +646,7 @@ int encode_wasm(WASMModule* module, char* out){
 				DataCountSection * dataCSection = (DataCountSection *) s.instance;
 				encode_data_count_section(dataCSection, out, module, &position);
 				#ifdef IDEM
-				if(position - previous - 1 != dataCSection->size){
+				if(position - previous - get_encoding_size(dataCSection->size, 0) != dataCSection->size){
 					ERROR("INCORRENT ENCODING %d %d\n", position-previous, dataCSection->size);
 					exit(1);
 				}
